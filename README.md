@@ -15,13 +15,9 @@
 
  - {ControlsScheme}
 
-## Developers
+## Developer
 
- - {Dev01} - {Role(s)}
- - {Dev02} - {Role(s)}
- - {Dev03} - {Role(s)}
- - {Dev04} - {Role(s)}
- - {Dev05} - {Role(s)}
+ - Victor Nisa
 
 ## License
 
