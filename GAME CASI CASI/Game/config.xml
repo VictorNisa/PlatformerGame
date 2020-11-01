@@ -34,7 +34,7 @@
   </file_system>
 
   <map>
-    <folder>maps/</folder>
+    <folder>Assets/maps/</folder>
     <division int="15"/>
   </map>
 
