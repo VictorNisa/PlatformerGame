@@ -1,0 +1,41 @@
+<!-- Config file for the game -->
+
+<config>
+  <app>
+    <title>Hellbound</title>
+    <organization>UPC</organization>
+    
+  </app>
+  <renderer>
+    <vsync value="true"/>
+  </renderer>
+
+  <window>
+    <resolution width="1024" height="768" scale="1"/>
+    <fullscreen value="false"/>
+    <borderless value="false"/>
+    <resizable value="false"/>
+    <fullscreen_window value="false"/>
+  </window>
+
+  <player>
+    <acceleration x="2" y="15"/>
+    <gravity value="0.65" />
+    <speed x="0" y="0" />
+    <maxSpeed x="5" y="15"/>
+    <box w="46" h="61"/>
+    <offset x="20"/>
+  </player>
+  
+  <file_system>
+    <path>data.zip</path>
+    <loadTo>save_game.xml</loadTo>
+    <saveTo>save_game.xml</saveTo>
+  </file_system>
+
+  <map>
+    <folder>maps/</folder>
+    <division int="15"/>
+  </map>
+
+</config>
