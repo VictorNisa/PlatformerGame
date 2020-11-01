@@ -1,19 +1,19 @@
-# {Project Name}
+# Hellbound
 
 ## Description
 
-{project description}
+Game about platforming very good.
 
 ## Key Features
 
- - {Feature01}
- - {Feature02}
- - {Feature03}
- - {Feature04}
+ - Dash
+ - Jump
+ - Platforms
  
 ## Controls
 
- - {ControlsScheme}
+ - WASD to move
+ - Left Shift to dash
 
 ## Developer
 
