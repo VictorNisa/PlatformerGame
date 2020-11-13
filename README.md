@@ -17,7 +17,7 @@ Game about platforming very good.
 
 ## Developer
 
- - Victor Nisa
+ - [Victor Nisa](https://github.com/VictorNisa)
 
 ## License
 
