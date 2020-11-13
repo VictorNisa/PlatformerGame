@@ -1,10 +1,9 @@
 #ifndef __APP_H__
 #define __APP_H__
 
-#include "Module.h"
 #include "List.h"
-
-#include "PugiXml/src/pugixml.hpp"
+#include "Module.h"
+#include "PugiXml\src\pugixml.hpp"
 
 // Modules
 class Window;
@@ -13,16 +12,20 @@ class Render;
 class Textures;
 class Audio;
 class Scene;
+class Map;
+class Players;
+class Collisions;
+class Transition;
 
-class App
+class Application
 {
 public:
 
 	// Constructor
-	App(int argc, char* args[]);
+	Application(int argc, char* args[]);
 
 	// Destructor
-	virtual ~App();
+	virtual ~Application();
 
 	// Called before render is available
 	bool Awake();
@@ -45,10 +48,14 @@ public:
 	const char* GetTitle() const;
 	const char* GetOrganization() const;
 
+	void LoadGame();
+	void SaveGame() const;
+	void GetSaveGames(List<SString>& list_to_fill) const;
+
 private:
 
 	// Load config file
-	bool LoadConfig();
+	pugi::xml_node LoadConfig(pugi::xml_document&) const;
 
 	// Call modules before each loop iteration
 	void PrepareUpdate();
@@ -65,6 +72,10 @@ private:
 	// Call modules after each loop iteration
 	bool PostUpdate();
 
+	// Load / Save
+	bool LoadGameNow();
+	bool SavegameNow() const;
+
 public:
 
 	// Modules
@@ -74,27 +85,28 @@ public:
 	Textures* tex;
 	Audio* audio;
 	Scene* scene;
+	Map* map;
+	Players* player;
+	Collisions* collisions;
+	Transition* fade;
 
 private:
 
+	List<Module*> modules;
+	uint frames;
+	float dt;
 	int argc;
 	char** args;
+
 	SString title;
 	SString organization;
 
-	List<Module *> modules;
-
-	// TODO 2: Create new variables from pugui namespace:
-	// a xml_document to store the config file and
-	// two xml_node to read specific branches of the xml
-	pugi::xml_document configFile;
-	pugi::xml_node config;
-	pugi::xml_node configApp;
-
-	uint frames;
-	float dt;
+	mutable bool want_to_save;
+	bool want_to_load;
+	SString load_game; 
+	mutable SString save_game;
 };
 
-extern App* app;
+extern Application* App; // No student is asking me about that ... odd :-S
 
-#endif	// __APP_H__
+#endif

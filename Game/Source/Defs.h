@@ -12,24 +12,24 @@
 
 // Deletes a buffer
 #define RELEASE( x ) \
-	{						\
-	if( x != NULL )		\
-		{					  \
-	  delete x;			\
-	  x = NULL;			  \
-		}					  \
-	}
+    {                        \
+    if( x != NULL )        \
+	    {                      \
+      delete x;            \
+	  x = NULL;              \
+	    }                      \
+    }
 
 // Deletes an array of buffers
 #define RELEASE_ARRAY( x ) \
-	{							  \
-	if( x != NULL )			  \
-		{							\
-	  delete[] x;				\
-	  x = NULL;					\
-		}							\
-							  \
-	}
+    {                              \
+    if( x != NULL )              \
+	    {                            \
+      delete[] x;                \
+	  x = NULL;                    \
+	    }                            \
+                              \
+    }
 
 #define IN_RANGE( value, min, max ) ( ((value) >= (min) && (value) <= (max)) ? 1 : 0 )
 #define MIN( a, b ) ( ((a) < (b)) ? (a) : (b) )
@@ -47,8 +47,8 @@ template <class VALUE_TYPE> void SWAP(VALUE_TYPE& a, VALUE_TYPE& b)
 }
 
 // Standard string size
-#define SHORT_STR	 32
-#define MID_STR	  255
+#define SHORT_STR	32
+#define MID_STR		255
 #define HUGE_STR	8192
 
 // Joins a path and file

@@ -2,6 +2,8 @@
 #define __AUDIO_H__
 
 #include "Module.h"
+#include "SDL_mixer\include\SDL_mixer.h"
+#include "List.h"
 
 #define DEFAULT_MUSIC_FADE_TIME 2.0f
 
@@ -24,7 +26,7 @@ public:
 	bool CleanUp();
 
 	// Play a music file
-	bool PlayMusic(const char* path, float fadeTime = DEFAULT_MUSIC_FADE_TIME);
+	bool PlayMusic(const char* path, float fade_time = DEFAULT_MUSIC_FADE_TIME);
 
 	// Load a WAV in memory
 	unsigned int LoadFx(const char* path);
@@ -34,8 +36,8 @@ public:
 
 private:
 
-	_Mix_Music* music;
-	List<Mix_Chunk *>	fx;
+	_Mix_Music*			music;
+	List<Mix_Chunk*>	fx;
 };
 
 #endif // __AUDIO_H__

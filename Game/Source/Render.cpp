@@ -1,15 +1,16 @@
+#include "Defs.h"
+#include "Log.h"
 #include "App.h"
 #include "Window.h"
 #include "Render.h"
-
-#include "Defs.h"
-#include "Log.h"
+#include "Players.h"
+#include "Map.h"
 
 #define VSYNC true
 
 Render::Render() : Module()
 {
-	name.Create("renderer");
+	name.create("renderer");
 	background.r = 0;
 	background.g = 0;
 	background.b = 0;
@@ -25,7 +26,7 @@ bool Render::Awake(pugi::xml_node& config)
 {
 	LOG("Create SDL rendering context");
 	bool ret = true;
-
+	// load flags
 	Uint32 flags = SDL_RENDERER_ACCELERATED;
 
 	if(config.child("vsync").attribute("value").as_bool(true) == true)
@@ -34,19 +35,19 @@ bool Render::Awake(pugi::xml_node& config)
 		LOG("Using vsync");
 	}
 
-	renderer = SDL_CreateRenderer(app->win->window, -1, flags);
+	renderer = SDL_CreateRenderer(App->win->window, -1, flags);
 
 	if(renderer == NULL)
 	{
 		LOG("Could not create the renderer! SDL_Error: %s\n", SDL_GetError());
 		ret = false;
 	}
-	else
+	else //Define Camera Rect
 	{
-		camera.w = app->win->screenSurface->w;
-		camera.h = app->win->screenSurface->h;
-		camera.x = 0;
-		camera.y = 0;
+		camera.w = App->win->screen_surface->w;
+		camera.h = App->win->screen_surface->h;
+		camera.x = 100;
+		camera.y = 100;
 	}
 
 	return ret;
@@ -70,6 +71,30 @@ bool Render::PreUpdate()
 
 bool Render::Update(float dt)
 {
+	uint winWidth, winHeight;
+	App->win->GetWindowSize(winWidth, winHeight);
+
+	camera.x = -App->player->player.position.x + winWidth/2 - App->player->player.boxW;
+	camera.y = -App->player->player.position.y + (winHeight/2) - App->player->player.boxH / 2;
+
+	if (camera.x >= 0)
+	{
+		camera.x = 0;
+	}
+	else if (camera.x <= -App->map->data.tile_width * App->map->data.width + winWidth )
+	{
+		camera.x = -App->map->data.tile_width * App->map->data.width + winWidth;
+	}
+
+	if (camera.y < -(App->map->data.tile_height * App->map->data.height) + winHeight && camera.y < 0)
+	{
+		camera.y = - (App->map->data.tile_height * App->map->data.height) + winHeight;
+	}
+	else if(camera.y > 0)
+	{
+		camera.y = 0;
+	}
+
 	return true;
 }
 
@@ -84,7 +109,27 @@ bool Render::PostUpdate()
 bool Render::CleanUp()
 {
 	LOG("Destroying SDL render");
-	SDL_DestroyRenderer(renderer);
+	SDL_DestroyRenderer(renderer); 
+	return true;
+}
+
+// Load Game State
+bool Render::Load(pugi::xml_node& data)
+{
+	camera.x = data.child("camera").attribute("x").as_int();
+	camera.y = data.child("camera").attribute("y").as_int();
+
+	return true;
+}
+
+// Save Game State
+bool Render::Save(pugi::xml_node& data) const
+{
+	pugi::xml_node cam = data.append_child("camera");
+
+	cam.append_attribute("x") = camera.x;
+	cam.append_attribute("y") = camera.y;
+
 	return true;
 }
 
@@ -104,19 +149,36 @@ void Render::ResetViewPort()
 }
 
 // Blit to screen
-bool Render::DrawTexture(SDL_Texture* texture, int x, int y, const SDL_Rect* section, float speed, double angle, int pivotX, int pivotY) const
+bool Render::Blit(SDL_Texture* texture, int x, int y, const SDL_Rect* section,  bool flip, float speed, double angle, int pivot_x, int pivot_y) const
 {
 	bool ret = true;
-	uint scale = app->win->GetScale();
+	uint scale = App->win->GetScale();
 
 	SDL_Rect rect;
-	rect.x = (int)(camera.x * speed) + x * scale;
-	rect.y = (int)(camera.y * speed) + y * scale;
+	if (flip) 
+	{
+		rect.x = ((int)(camera.x * speed) + x * scale) + App->map->data.tilesets[1]->tile_width; //Add player tile width when flipping it
+		rect.y = (int)(camera.y * speed) + y * scale;
+	}
+	else
+	{
+		rect.x = (int)(camera.x * speed) + x * scale;
+		rect.y = (int)(camera.y * speed) + y * scale;
 
+	}
+	
 	if(section != NULL)
 	{
-		rect.w = section->w;
-		rect.h = section->h;
+		if (flip)
+		{
+			rect.w = -section->w;
+			rect.h = section->h;
+		}
+		else 
+		{
+			rect.w = section->w;
+			rect.h = section->h;
+		}
 	}
 	else
 	{
@@ -129,10 +191,10 @@ bool Render::DrawTexture(SDL_Texture* texture, int x, int y, const SDL_Rect* sec
 	SDL_Point* p = NULL;
 	SDL_Point pivot;
 
-	if(pivotX != INT_MAX && pivotY != INT_MAX)
+	if(pivot_x != INT_MAX && pivot_y != INT_MAX)
 	{
-		pivot.x = pivotX;
-		pivot.y = pivotY;
+		pivot.x = pivot_x;
+		pivot.y = pivot_y;
 		p = &pivot;
 	}
 
@@ -145,10 +207,10 @@ bool Render::DrawTexture(SDL_Texture* texture, int x, int y, const SDL_Rect* sec
 	return ret;
 }
 
-bool Render::DrawRectangle(const SDL_Rect& rect, Uint8 r, Uint8 g, Uint8 b, Uint8 a, bool filled, bool use_camera) const
+bool Render::DrawQuad(const SDL_Rect& rect, Uint8 r, Uint8 g, Uint8 b, Uint8 a, bool filled, bool use_camera) const
 {
 	bool ret = true;
-	uint scale = app->win->GetScale();
+	uint scale = App->win->GetScale();
 
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 	SDL_SetRenderDrawColor(renderer, r, g, b, a);
@@ -176,7 +238,7 @@ bool Render::DrawRectangle(const SDL_Rect& rect, Uint8 r, Uint8 g, Uint8 b, Uint
 bool Render::DrawLine(int x1, int y1, int x2, int y2, Uint8 r, Uint8 g, Uint8 b, Uint8 a, bool use_camera) const
 {
 	bool ret = true;
-	uint scale = app->win->GetScale();
+	uint scale = App->win->GetScale();
 
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 	SDL_SetRenderDrawColor(renderer, r, g, b, a);
@@ -200,7 +262,7 @@ bool Render::DrawLine(int x1, int y1, int x2, int y2, Uint8 r, Uint8 g, Uint8 b,
 bool Render::DrawCircle(int x, int y, int radius, Uint8 r, Uint8 g, Uint8 b, Uint8 a, bool use_camera) const
 {
 	bool ret = true;
-	uint scale = app->win->GetScale();
+	uint scale = App->win->GetScale();
 
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 	SDL_SetRenderDrawColor(renderer, r, g, b, a);

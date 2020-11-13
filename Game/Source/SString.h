@@ -1,12 +1,11 @@
-#ifndef __SSTRING_H__
-#define __SSTRING_H__
-
-#include "Defs.h"
+#ifndef __SString_H__
+#define __SString_H__
 
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include <assert.h>
+#include "Defs.h"
 
 #define TMP_STRING_SIZE	4096
 
@@ -69,7 +68,7 @@ public:
 			Clear();
 		}
 	}
-
+	
 	// Destructor
 	virtual ~SString()
 	{
@@ -77,7 +76,7 @@ public:
 			delete[] str;
 	}
 
-	const SString& Create(const char *format, ...)
+	const SString& create(const char *format, ...)
 	{
 		size = 0;
 
@@ -131,7 +130,7 @@ public:
 			return strcmp(string, str) != 0;
 		return true;
 	}
-
+	
 	const SString& operator= (const SString& string)
 	{
 		if(string.Length() + 1 > size)
@@ -172,7 +171,7 @@ public:
 
 		return(*this);
 	}
-
+	
 	const SString& operator+= (const SString& string)
 	{
 		unsigned int need_size = string.Length() + Length() + 1;
@@ -291,20 +290,19 @@ public:
 			{
 				if(strncmp(src, &str[i], src_len) == 0)
 				{
-					// Make room
+					// make room
 					for(uint j = strlen(str) + diff; j > i + diff; --j)
 					{
 						str[j] = str[j - diff];
 					}
 
-					// Copy
+					// copy
 					for(uint j = 0; j < dst_len; ++j)
 					{
 						str[i++] = dst[j];
 					}
 				}
 			}
-
 		}
 
 		return instances;
@@ -313,7 +311,7 @@ public:
 	uint Find(const char* string) const
 	{
 		uint ret = 0;
-
+		
 		if(string != NULL)
 		{
 			uint len = strlen(string);
@@ -329,6 +327,31 @@ public:
 		}
 
 		return ret;
+	}
+
+	/**
+	* Paste a substring into buffer
+	*/
+	uint SubString(unsigned int start, unsigned int end, SString& buffer) const
+	{
+		if(str != NULL)
+		{
+			start = MIN(start, size);
+			end = (end == 0) ? size : MIN(end, size);
+			uint s = end - start;
+
+			if(s > buffer.size)
+			{
+				char* tmp = buffer.str;
+				buffer.Alloc(s);
+				delete[] tmp;
+			}
+			strncpy_s(buffer.str, s, &str[start], s);
+			buffer.str[s] = '\0';
+			return(end - start);
+		}
+		else
+			return 0;
 	}
 
 private:

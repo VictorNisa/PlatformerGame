@@ -1,11 +1,17 @@
+// ----------------------------------------------------
+// Module.h
+// Interface for all engine modules
+// ----------------------------------------------------
+
 #ifndef __MODULE_H__
 #define __MODULE_H__
 
 #include "SString.h"
+#include "PugiXml\src\pugixml.hpp"
 
-#include "PugiXml/src/pugixml.hpp"
+class Application;
 
-class App;
+struct Collider;
 
 class Module
 {
@@ -20,7 +26,6 @@ public:
 	}
 
 	// Called before render is available
-	// TODO 5: Sending config file to all modules
 	virtual bool Awake(pugi::xml_node&)
 	{
 		return true;
@@ -56,10 +61,22 @@ public:
 		return true;
 	}
 
+	virtual bool Load(pugi::xml_node&)
+	{
+		return true;
+	}
+
+	virtual bool Save(pugi::xml_node&) const
+	{
+		return true;
+	}
+
+	// Callbacks ---
+	virtual void OnCollision(Collider* A, Collider* B) {	}
 public:
 
 	SString name;
-	bool active;
+	bool		active;
 
 };
 

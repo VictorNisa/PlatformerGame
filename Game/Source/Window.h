@@ -22,7 +22,7 @@ public:
 	bool CleanUp();
 
 	// Changae title
-	void SetTitle(const char* title);
+	void SetTitle(const char* new_title);
 
 	// Retrive window size
 	void GetWindowSize(uint& width, uint& height) const;
@@ -31,17 +31,17 @@ public:
 	uint GetScale() const;
 
 public:
-	// The window we'll be rendering to
+	//The window we'll be rendering to
 	SDL_Window* window;
 
-	// The surface contained by the window
-	SDL_Surface* screenSurface;
+	//The surface contained by the window
+	SDL_Surface* screen_surface;
 
 private:
-	SString title;
-	uint width;
-	uint height;
-	uint scale;
+	SString	title;
+	uint		width;
+	uint		height;
+	uint		scale;
 };
 
 #endif // __WINDOW_H__

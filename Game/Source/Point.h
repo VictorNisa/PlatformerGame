@@ -1,8 +1,11 @@
+// ----------------------------------------------------
+// Point class    -----------
+// ----------------------------------------------------
+
 #ifndef __POINT_H__
 #define __POINT_H__
 
 #include "Defs.h"
-
 #include <math.h>
 
 template<class TYPE>
@@ -38,7 +41,7 @@ public:
 	// Math ------------------------------------------------
 	Point operator -(const Point &v) const
 	{
-		p2Vector2 r;
+		Vector2 r;
 
 		r.x = x - v.x;
 		r.y = y - v.y;
@@ -48,7 +51,7 @@ public:
 
 	Point operator + (const Point &v) const
 	{
-		p2Vector2 r;
+		Vector2 r;
 
 		r.x = x + v.x;
 		r.y = y + v.y;

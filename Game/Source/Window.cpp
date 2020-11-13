@@ -1,8 +1,7 @@
-#include "Window.h"
-#include "App.h"
-
 #include "Defs.h"
 #include "Log.h"
+#include "App.h"
+#include "Window.h"
 
 #include "SDL/include/SDL.h"
 
@@ -10,13 +9,14 @@
 Window::Window() : Module()
 {
 	window = NULL;
-	screenSurface = NULL;
-	name.Create("window");
+	screen_surface = NULL;
+	name.create("window");
 }
 
 // Destructor
 Window::~Window()
 {
+
 }
 
 // Called before render is available
@@ -32,8 +32,6 @@ bool Window::Awake(pugi::xml_node& config)
 	}
 	else
 	{
-		// Create window
-		// TODO 6: Load all required configurations from config.xml
 		Uint32 flags = SDL_WINDOW_SHOWN;
 		bool fullscreen = config.child("fullscreen").attribute("value").as_bool(false);
 		bool borderless = config.child("borderless").attribute("value").as_bool(false);
@@ -44,12 +42,27 @@ bool Window::Awake(pugi::xml_node& config)
 		height = config.child("resolution").attribute("height").as_int(480);
 		scale = config.child("resolution").attribute("scale").as_int(1);
 
-		if(fullscreen == true) flags |= SDL_WINDOW_FULLSCREEN;
-		if(borderless == true) flags |= SDL_WINDOW_BORDERLESS;
-		if(resizable == true) flags |= SDL_WINDOW_RESIZABLE;
-		if(fullscreen_window == true) flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+		if(fullscreen == true)
+		{
+			flags |= SDL_WINDOW_FULLSCREEN;
+		}
 
-		window = SDL_CreateWindow(app->GetTitle(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, flags);
+		if(borderless == true)
+		{
+			flags |= SDL_WINDOW_BORDERLESS;
+		}
+
+		if(resizable == true)
+		{
+			flags |= SDL_WINDOW_RESIZABLE;
+		}
+
+		if(fullscreen_window == true)
+		{
+			flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+		}
+
+		window = SDL_CreateWindow(App->GetTitle(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, flags);
 
 		if(window == NULL)
 		{
@@ -58,8 +71,7 @@ bool Window::Awake(pugi::xml_node& config)
 		}
 		else
 		{
-			// Get window surface
-			screenSurface = SDL_GetWindowSurface(window);
+			screen_surface = SDL_GetWindowSurface(window);
 		}
 	}
 
@@ -71,13 +83,13 @@ bool Window::CleanUp()
 {
 	LOG("Destroying SDL window and quitting all SDL systems");
 
-	// Destroy window
+	//Destroy window
 	if(window != NULL)
 	{
 		SDL_DestroyWindow(window);
 	}
 
-	// Quit SDL subsystems
+	//Quit SDL subsystems
 	SDL_Quit();
 	return true;
 }

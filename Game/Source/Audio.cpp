@@ -1,21 +1,16 @@
-#include "App.h"
-#include "Audio.h"
-
 #include "Defs.h"
 #include "Log.h"
+#include "Audio.h"
+#include "List.h"
 
-// NOTE: Recommended using: Additional Include Directories,
-// instead of 'hardcoding' library location path in code logic
 #include "SDL/include/SDL.h"
-#include "SDL_mixer/include/SDL_mixer.h"
-
-// NOTE: Library linkage is configured in Linker Options
-//#pragma comment(lib, "../Game/Source/External/SDL_mixer/libx86/SDL2_mixer.lib")
+#include "SDL_mixer\include\SDL_mixer.h"
+#pragma comment( lib, "SDL_mixer/libx86/SDL2_mixer.lib" )
 
 Audio::Audio() : Module()
 {
 	music = NULL;
-	name.Create("audio");
+	name.create("audio");
 }
 
 // Destructor
@@ -36,7 +31,7 @@ bool Audio::Awake(pugi::xml_node& config)
 		ret = true;
 	}
 
-	// Load support for the JPG and PNG image formats
+	// load support for the JPG and PNG image formats
 	int flags = MIX_INIT_OGG;
 	int init = Mix_Init(flags);
 
@@ -47,7 +42,7 @@ bool Audio::Awake(pugi::xml_node& config)
 		ret = true;
 	}
 
-	// Initialize SDL_mixer
+	//Initialize SDL_mixer
 	if(Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
 	{
 		LOG("SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError());
@@ -71,11 +66,11 @@ bool Audio::CleanUp()
 		Mix_FreeMusic(music);
 	}
 
-	ListItem<Mix_Chunk*>* item;
+	List_item<Mix_Chunk*>* item;
 	for(item = fx.start; item != NULL; item = item->next)
 		Mix_FreeChunk(item->data);
 
-	fx.Clear();
+	fx.clear();
 
 	Mix_CloseAudio();
 	Mix_Quit();
@@ -103,7 +98,6 @@ bool Audio::PlayMusic(const char* path, float fade_time)
 			Mix_HaltMusic();
 		}
 
-		// this call blocks until fade out is done
 		Mix_FreeMusic(music);
 	}
 
@@ -154,7 +148,7 @@ unsigned int Audio::LoadFx(const char* path)
 	}
 	else
 	{
-		fx.Add(chunk);
+		fx.add(chunk);
 		ret = fx.count();
 	}
 

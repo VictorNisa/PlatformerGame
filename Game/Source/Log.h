@@ -1,8 +1,11 @@
-#ifndef __LOG_H__
-#define __LOG_H__
+#ifndef __Log_H__
+#define __Log_H__
 
-#define LOG(format, ...) Log(__FILE__, __LINE__, format, __VA_ARGS__)
+#include <windows.h>
+#include <stdio.h>
 
-void Log(const char file[], int line, const char* format, ...);
+#define LOG(format, ...) log(__FILE__, __LINE__, format, __VA_ARGS__)
 
-#endif  // __LOG_H__
+void log(const char file[], int line, const char* format, ...);
+
+#endif
