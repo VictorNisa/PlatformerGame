@@ -6,13 +6,15 @@
 #include "Point.h"
 #include "Module.h"
 #include "Collisions.h"
+#include "Log.h"
+#include "EntityManager.h"
 
 // ----------------------------------------------------
 union value
 {
-	const char* v_string;
-	int			v_int;
-	float		v_float;
+	const char* vString;
+	int vInt;
+	float vFloat;
 };
 
 struct Properties
@@ -37,7 +39,7 @@ struct Properties
 		list.clear();
 	}
 
-	value Get(const char* name, value* default_value = nullptr) const;
+	value Get(const char* name, value* defaultValue = nullptr) const;
 
 	List<Property*>	list;
 };
@@ -50,7 +52,9 @@ enum class ObjectType
 	SOLID,
 	DAMAGE,
 	PLAYER,
-	WARP,
+	ENEMY,
+	TELEPORT,
+	ATTACK,
 
 	MAX_OBJECTS = 6
 };
@@ -61,7 +65,9 @@ struct Animations
 	uint id;
 	uint nFrames;
 	uint* frames;
-	uint speed;
+	//p2SString prevAnimName = "idle";
+	float speed;
+	//float frameCount = 0.0f;
 };
 
 struct Object 
@@ -74,15 +80,13 @@ struct Object
 	Properties properties;
 };
 
-
 struct MapObjectgroup 
 {
 	uint id;
 	SString name;
 	Object* objects;
-	uint objects_size;
+	uint objectsSize;
 };
-
 
 // ----------------------------------------------------
 struct MapLayer 
@@ -92,9 +96,14 @@ struct MapLayer
 	uint height;
 	uint* data; 
 	float speed;
+	bool navigation;
 	inline uint Get(int x, int y) const
 	{
 		return x + y * width;
+	}
+	inline uint GetPath(int x, int y) const
+	{
+		return data[(y*width) + x];
 	}
 };
 
@@ -102,11 +111,11 @@ struct MapLayer
 // ----------------------------------------------------
 struct TileSet
 {
-	SDL_Rect* Tilerect = new SDL_Rect;
+	SDL_Rect Tilerect ;
 
 	SDL_Rect* TileRect(uint tile_id) 
 	{
-		SDL_Rect* ret = Tilerect; 
+		SDL_Rect* ret = &Tilerect; 
 
 		int x = ((tile_id - firstgid) % num_tiles_width);
 		int y = ((tile_id - firstgid) / num_tiles_width);
@@ -119,11 +128,11 @@ struct TileSet
 		return ret;
 	}
 	
-	SDL_Rect* PlayerTilerect = new SDL_Rect;
+	SDL_Rect PlayerTilerect;
 
 	SDL_Rect* PlayerTileRect(uint tile_id) 
 	{
-		SDL_Rect* ret = PlayerTilerect;
+		SDL_Rect* ret = &PlayerTilerect;
 
 		int num_t_width = tex_width / tile_width;
 		int num_t_height = tex_height / tile_height;
@@ -180,7 +189,7 @@ struct MapData
 	int tile_height;
 	
 	const char* name;
-	fPoint start_position;
+	iPoint startPosition;
 	
 	SDL_Color background_color;
 	MapTypes type;
@@ -205,7 +214,7 @@ public:
 	// Called each loop iteration
 	void Draw();
 
-	void DrawAnimation(SString name,const char* tileset,bool flip=false);
+	void DrawAnimation(SString name,const char* tileset, iPoint& position, AnimationInfo& aInfo, bool flip=false);
 
 	// Called before quitting
 	bool CleanUp();
@@ -216,6 +225,13 @@ public:
 	bool Load(pugi::xml_node&);
 	bool Save(pugi::xml_node&) const;
 
+	iPoint MapToWorldCentered(int x, int y) const;
+	iPoint MapToWorld(int x, int y) const;
+	iPoint WorldToMap(int x, int y) const;
+
+	bool CreateWalkabilityMap(int& width, int& height, uchar** buffer) const;
+	TileSet* GetTilesetFromTileID(int id) const;
+
 private:
 
 	bool LoadMap();
@@ -223,26 +239,27 @@ private:
 	bool LoadTilesetImage(pugi::xml_node& tileset_node, TileSet* set);
 	bool LoadTilesetAnimation(pugi::xml_node& tileset_node, TileSet* set);
 	bool LoadLayer(pugi::xml_node& node, MapLayer* layer);
-	bool LoadObjectgroup(pugi::xml_node& node, MapObjectgroup* objectgroup);
+	bool LoadObjectGroup(pugi::xml_node& node, MapObjectgroup* objectgroup);
 
 public:
 
 	MapData data;
-	Collider camera_collider;
-	SDL_Rect tile_rect;
+	bool debug;
+
+	// Collider camera_collider;
+	//SDL_Rect tile_rect;
 
 private:
 
-	int i = 0;
+	// int i = 0;
 
-	int frameCount = 1;
+	// int frameCount = 1;
 
-	int ms_to_frame;
+	int msToFrame;
 
 	pugi::xml_document map_file;
 	SString folder;
 	bool map_loaded;
-	SString prev_Anim_Name = "idle";
 };
 
 #endif // __MAP_H__

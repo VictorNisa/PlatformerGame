@@ -44,8 +44,8 @@ bool Render::Awake(pugi::xml_node& config)
 	}
 	else //Define Camera Rect
 	{
-		camera.w = App->win->screen_surface->w;
-		camera.h = App->win->screen_surface->h;
+		camera.w = App->win->screenSurface->w;
+		camera.h = App->win->screenSurface->h;
 		camera.x = 100;
 		camera.y = 100;
 	}
@@ -74,8 +74,8 @@ bool Render::Update(float dt)
 	uint winWidth, winHeight;
 	App->win->GetWindowSize(winWidth, winHeight);
 
-	camera.x = -App->player->player.position.x + winWidth/2 - App->player->player.boxW;
-	camera.y = -App->player->player.position.y + (winHeight/2) - App->player->player.boxH / 2;
+	camera.x = -App->entities->player->position.x + winWidth/2 - App->entities->player->player.boxW;
+	camera.y = -App->entities->player->position.y + (winHeight/2) - App->entities->player->player.boxH / 2;
 
 	if (camera.x >= 0)
 	{

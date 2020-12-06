@@ -10,16 +10,20 @@
 #include "Audio.h"
 #include "Scene.h"
 #include "Map.h"
-#include "Players.h"
+#include "Pathfinding.h"
+#include "EntityManager.h"
+//#include "Players.h"
 #include "Collisions.h"
 #include "Transition.h"
 #include "App.h"
+#include "Timer.h"
+#include "PerfTimer.h"
 
 // Constructor
 Application::Application(int argc, char* args[]) : argc(argc), args(args)
 {
 	frames = 0;
-	want_to_save = want_to_load = false;
+	wantToSave = wantToLoad = false;
 
 	input = new Input();
 	win = new Window();
@@ -28,7 +32,9 @@ Application::Application(int argc, char* args[]) : argc(argc), args(args)
 	audio = new Audio();
 	scene = new Scene();
 	map = new Map();
-	player = new Players();
+	pathfinding = new Pathfinding();
+	entities = new EntityManager();
+	// player = new Players();
 	collisions = new Collisions();
 	fade = new Transition();
 
@@ -39,12 +45,14 @@ Application::Application(int argc, char* args[]) : argc(argc), args(args)
 	AddModule(tex);
 	AddModule(audio);
 	AddModule(map);
+	AddModule(pathfinding);
 	AddModule(scene);
-	AddModule(player);
+	AddModule(entities);
+	// AddModule(player);
 	AddModule(collisions);
 	AddModule(fade);
 
-	// render last to swap buffer
+	// Render last to swap buffer
 	AddModule(render);
 }
 
@@ -72,23 +80,32 @@ void Application::AddModule(Module* module)
 // Called before render is available
 bool Application::Awake()
 {
-	pugi::xml_document	config_file;
-	pugi::xml_node		config;
-	pugi::xml_node		app_config;
+	pugi::xml_document configFile;
+	// pugi::xml_node config;
+	pugi::xml_node appConfig;
 
 	bool ret = false;
 		
-	config = LoadConfig(config_file);
+	config = LoadConfig(configFile);
 
 	if(config.empty() == false)
 	{
 		// self-config
 		ret = true;
-		app_config = config.child("app");
-		title.create(app_config.child("title").child_value());
-		organization.create(app_config.child("organization").child_value());
-		load_game = config.child("file_system").child("loadTo").child_value();
-		save_game = config.child("file_system").child("saveTo").child_value();
+		appConfig = config.child("app");
+		title.create(appConfig.child("title").child_value());
+		organization.create(appConfig.child("organization").child_value());
+		loadGame = config.child("fileSystem").child("loadTo").child_value();
+		saveGame = config.child("fileSystem").child("saveTo").child_value();
+
+		if (appConfig.attribute("framerateCap").as_int() == NULL)
+		{
+			frameRate = 0;
+		}
+		else
+		{
+			frameRate = appConfig.attribute("framerateCap").as_int();
+		}
 	}
 
 	if(ret == true)
@@ -145,16 +162,16 @@ bool Application::Update()
 }
 
 // ---------------------------------------------
-pugi::xml_node Application::LoadConfig(pugi::xml_document& config_file) const
+pugi::xml_node Application::LoadConfig(pugi::xml_document& configFile) const
 {
 	pugi::xml_node ret;
 
-	pugi::xml_parse_result result = config_file.load_file("config.xml");
+	pugi::xml_parse_result result = configFile.load_file("config.xml");
 
 	if(result == NULL)
 		LOG("Could not load map xml file config.xml. pugi error: %s", result.description());
 	else
-		ret = config_file.child("config");
+		ret = configFile.child("config");
 
 	return ret;
 }
@@ -162,16 +179,53 @@ pugi::xml_node Application::LoadConfig(pugi::xml_document& config_file) const
 // ---------------------------------------------
 void Application::PrepareUpdate()
 {
+	frameCount++;
+	lastSecFrameCount++;
+
+	dt = frameTime.ReadSec();
+
+	frameTime.Start();
 }
 
 // ---------------------------------------------
 void Application::FinishUpdate()
 {
-	if(want_to_save == true)
+	if(wantToSave == true)
 		SavegameNow();
 
-	if(want_to_load == true)
+	if(wantToLoad == true)
 		LoadGameNow();
+
+	if (lastSecFrameTime.Read() > 1000)
+	{
+		lastSecFrameTime.Start();
+		prevLastSecFrameCount = lastSecFrameCount;
+		lastSecFrameCount = 0;
+	}
+
+	float avgFps = float(frameCount) / startupTime.ReadSec();
+	float secondsSinceStartup = startupTime.ReadSec();
+	uint32 lastFrameMs = frameTime.Read();
+	uint32 framesOnLastUpdate = prevLastSecFrameCount;
+
+	static char title[256];
+	sprintf_s(title, 256, "Av.FPS: %.2f Last Frame Ms: %02u Last sec frames: %i  Time since startup: %.3f Frame Count: %lu ",
+		avgFps, lastFrameMs, framesOnLastUpdate, secondsSinceStartup, frameCount);
+	App->win->SetTitle(title);
+
+	uint32 frametimeTmp = frameTime.Read();
+
+	delayTimer.Start();
+
+	if (frameRate != 0)
+	{
+		if (1000 / frameRate > frameTime.Read())
+		{
+
+			SDL_Delay((1000 / frameRate) - frameTime.Read());
+
+		}
+	}
 }
 
 // Call modules before each loop iteration
@@ -203,6 +257,18 @@ bool Application::DoUpdate()
 	List_item<Module*>* item;
 	item = modules.start;
 	Module* pModule = NULL;
+
+	if (doLogic == true) {
+		accumulatedTime = 0.0f;
+		doLogic = false;
+	}
+
+	accumulatedTime += dt;
+
+	if (accumulatedTime >= 0.1f)
+	{
+		doLogic = true;
+	}
 
 	for(item = modules.start; item != NULL && ret == true; item = item->next)
 	{
@@ -285,13 +351,13 @@ const char* Application::GetOrganization() const
 // Load / Save
 void Application::LoadGame()
 {
-	want_to_load = true;
+	wantToLoad = true;
 }
 
 // ---------------------------------------
 void Application::SaveGame() const
 {
-	want_to_save = true;
+	wantToSave = true;
 }
 
 // ---------------------------------------
@@ -307,13 +373,13 @@ bool Application::LoadGameNow()
 	pugi::xml_document data;
 	pugi::xml_node root;
 
-	pugi::xml_parse_result result = data.load_file(load_game.GetString());
+	pugi::xml_parse_result result = data.load_file(loadGame.GetString());
 
 	if(result != NULL)
 	{
-		LOG("Loading new Game State from %s...", load_game.GetString());
+		LOG("Loading new Game State from %s...", loadGame.GetString());
 
-		root = data.child("game_state");
+		root = data.child("gameState");
 
 		List_item<Module*>* item = modules.start;
 		ret = true;
@@ -331,9 +397,9 @@ bool Application::LoadGameNow()
 			LOG("...loading process interrupted with error on module %s", (item != NULL) ? item->data->name.GetString() : "unknown");
 	}
 	else
-		LOG("Could not parse game state xml file %s. pugi error: %s", load_game.GetString(), result.description());
+		LOG("Could not parse game state xml file %s. pugi error: %s", loadGame.GetString(), result.description());
 
-	want_to_load = false;
+	wantToLoad = false;
 	return ret;
 }
 
@@ -341,13 +407,13 @@ bool Application::SavegameNow() const
 {
 	bool ret = true;
 
-	LOG("Saving Game State to %s...", save_game.GetString());
+	LOG("Saving Game State to %s...", saveGame.GetString());
 
 	// xml object were we will store all data
 	pugi::xml_document data;
 	pugi::xml_node root;
 	
-	root = data.append_child("game_state");
+	root = data.append_child("gameState");
 
 	List_item<Module*>* item = modules.start;
 
@@ -359,13 +425,13 @@ bool Application::SavegameNow() const
 
 	if(ret == true)
 	{
-		data.save_file(save_game.GetString());
+		data.save_file(saveGame.GetString());
 		LOG("... finished saving", );
 	}
 	else
 		LOG("Save process halted from an error in module %s", (item != NULL) ? item->data->name.GetString() : "unknown");
 
 	data.reset();
-	want_to_save = false;
+	wantToSave = false;
 	return ret;
 }

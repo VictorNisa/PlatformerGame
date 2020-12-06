@@ -25,10 +25,7 @@ public:
 	float current_frame;
 	int last_frame = 0;
 
-
 	bool lock = false;
-
-	
 
 private:
 	int loops = 0;
@@ -37,7 +34,6 @@ public:
 	bool DrawAnimation(const char* name)
 	{
 		App->map->data;
-
 
 		return true;
 	}

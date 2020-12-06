@@ -4,11 +4,14 @@
 
 Game about platforming very good.
 
+!!! DUE TO A MEMORY LEAK REGARDING ANIMATIONS, THE GAME DOES NOT WORK
+
 ## Key Features
 
  - Dash
  - Jump
  - Platforms
+ - Enemies
  
 ## Controls
 

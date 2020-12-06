@@ -2,8 +2,8 @@
 #define __COLLISIONS_H__
 
 
-
-#include "Module.h"
+//#include "Module.h"
+#include "EntityManager.h"
 #include "SDL/include/SDL.h"
 
 enum class ObjectType;
@@ -14,10 +14,12 @@ struct Properties;
 struct Collider
 {
 	SDL_Rect rect;
-	bool to_delete = false;
+	bool toDelete = false;
 	ObjectType type;
 	Module* callback = nullptr;
-	Properties* userdata;
+	Properties* userData;
+	
+	Entity* entity;
 
 	Collider(SDL_Rect rectangle, ObjectType type, Module* callback = nullptr) :
 		rect(rectangle),
@@ -64,8 +66,9 @@ public:
 	// Called before quitting
 	bool CleanUp();
 
-	Collider* AddCollider(SDL_Rect rect, ObjectType type, Module* callback, Properties* userdata = nullptr);
+	Collider* AddCollider(SDL_Rect rect, ObjectType type, Module* callback, Entity* entity = nullptr, Properties* userData = nullptr);
 	void LoadFromMap();
+
 private:
 	
 	void DebugDraw();
@@ -74,7 +77,7 @@ private:
 public:
 
 	List<Collider*> colliders;
-	bool debug_colliders;
+	bool debugColliders;
 
 private:
 

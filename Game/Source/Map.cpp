@@ -6,6 +6,7 @@
 #include "Players.h"
 #include "Map.h"
 #include "Collisions.h"
+#include "Pathfinding.h"
 #include "Transition.h"
 #include "Window.h"
 #include <math.h>
@@ -22,7 +23,7 @@ Map::~Map()
 bool Map::Save(pugi::xml_node& node) const
 {
 	LOG("Saving Map...");
-	node.append_child("map_name").append_attribute("filename") = data.name;
+	node.append_child("mapName").append_attribute("fileName") = data.name;
 
 	return true;
 }
@@ -31,7 +32,7 @@ bool Map::Load(pugi::xml_node& node)
 {
 	LOG("Loading Map...");
 
-	App->fade->FadeToBlack(node.child("map_name").attribute("filename").as_string(), false);
+	App->fade->FadeToBlack(node.child("mapName").attribute("fileName").as_string(), false);
 
 	return true;
 }
@@ -44,7 +45,9 @@ bool Map::Awake(pugi::xml_node& config)
 
 	folder.create(config.child("folder").child_value());
 
-	ms_to_frame = config.child("division").attribute("int").as_int();
+	msToFrame = config.child("division").attribute("int").as_int();
+
+	debug = false;
 
 	return ret;
 }
@@ -56,54 +59,43 @@ void Map::Draw()
 	
 	uint winWidth, winHeight;
 
-	App->win->GetWindowSize(winWidth,winHeight );
+	App->win->GetWindowSize(winWidth, winHeight);
 	
-	camera_collider.rect.w = winWidth;
-	camera_collider.rect.h = winHeight;
-	App->map->camera_collider.SetPos(-App->render->camera.x, -App->render->camera.y);
-
 	MapLayer* mapLayer = data.layers[0];
-
 	List_item<MapLayer*>* layerIter = data.layers.start;
+
+	int camera_h_tile = winHeight / 32 + 1;
+	int camera_w_tile = winWidth / 32 + 1;
 	
 	while(layerIter != nullptr) 
 	{ 
 		uint* gid_list = layerIter->data->data;
 
-		int i = 0;
-		for (int y = 0; y < data.height; y++) 
+		if (layerIter->data->navigation == true && debug == false)
 		{
-			for (int x = 0; x < data.width; x++) 
+			break;
+		}
+
+		int camera_x_tile = (-App->render->camera.x * layerIter->data->speed) / 32;
+		int camera_y_tile = (-App->render->camera.y * layerIter->data->speed) / 32;
+
+		int i = 0;
+		int j = camera_y_tile;
+
+		for (int y = camera_y_tile; y < (camera_y_tile + camera_h_tile); y++)
+		{
+			for (int x = camera_x_tile; x < (camera_x_tile + camera_w_tile); x++)
 			{
-
-				if (layerIter->data->speed != 1.0f)
-				{
-					tile_rect.x = (App->render->camera.x * layerIter->data->speed) +data.tilesets[0]->GetPos(x, y).x -App->render->camera.x; 
-					tile_rect.y = (App->render->camera.y * layerIter->data->speed) + data.tilesets[0]->GetPos(x, y).y - App->render->camera.y;
-				}
-				else
-				{
-					tile_rect.x = data.tilesets[0]->GetPos(x, y).x;
-					tile_rect.y = data.tilesets[0]->GetPos(x, y).y ;
-				}
-				tile_rect.h = App->map->data.tile_height; 
-				tile_rect.w = App->map->data.tile_height;
-
-				if (camera_collider.CheckCollision(tile_rect))
-				{
-					App->render->Blit(data.tilesets[0]->texture,
-						data.tilesets[0]->GetPos(x, y).x, data.tilesets[0]->GetPos(x, y).y,
-						data.tilesets[0]->TileRect(gid_list[i]), false, layerIter->data->speed);
-				}
-				
-				i++;
+				i = j * data.width + x;
+				App->render->Blit(data.tilesets[0]->texture, data.tilesets[0]->GetPos(x, y).x, data.tilesets[0]->GetPos(x, y).y, data.tilesets[0]->TileRect(gid_list[i]), false, layerIter->data->speed);
 			}
+			j++;
 		}
 		layerIter = layerIter->next;
 	}
 }
 
-void Map::DrawAnimation(SString name, const char* tileset,bool flip)
+void Map::DrawAnimation(SString name, const char* tileset, iPoint& position, AnimationInfo& aInfo, bool flip)
 {
 	TileSet* animTileset = nullptr;
 
@@ -118,7 +110,12 @@ void Map::DrawAnimation(SString name, const char* tileset,bool flip)
 		TilesetIter = TilesetIter->next;
 	}
 
-	Animations* currentanim = nullptr;
+	if (animTileset == NULL)
+	{
+		return;
+	}
+
+	Animations* currentAnim = nullptr;
 
 	List_item<Animations*>* animIter = animTileset->animations.start;
 
@@ -126,34 +123,94 @@ void Map::DrawAnimation(SString name, const char* tileset,bool flip)
 	{
 		if (name == animIter->data->name)
 		{
-			currentanim = animIter->data; 
+			currentAnim = animIter->data; 
 		}
 		animIter = animIter->next;
 	}
 	
-		if (prev_Anim_Name != currentanim->name)
-		{
-			i = 0;
-			frameCount = 1;
-		}
-	
-	prev_Anim_Name = currentanim->name;
-
-	App->render->Blit(animTileset->texture,								
-	App->player->player.position.x , App->player->player.position.y,	
-	animTileset->PlayerTileRect(currentanim->frames[i]),flip );			
-
-	if (frameCount % (currentanim->speed/ms_to_frame) == 0)
+	if (aInfo.prevAnimName != currentAnim->name.GetString())
 	{
-		i++;
+		aInfo.iter = 0;
+		aInfo.frameCount = 0.0f;
 	}
-	if (i >= currentanim->nFrames) 
-	{				
-		i = 0;
+	
+	aInfo.prevAnimName = currentAnim->name;
+
+	App->render->Blit(animTileset->texture, position.x, position.y, animTileset->PlayerTileRect(currentAnim->frames[aInfo.iter]), flip);			
+
+	if (aInfo.frameCount > currentAnim->speed/1000)
+	{
+		aInfo.iter++;
+		aInfo.frameCount = 0.0f;
 	}
 
-	frameCount++;
+	if (aInfo.iter >= currentAnim->nFrames) 
+	{				
+		aInfo.iter = 0;
+	}
+
+	aInfo.frameCount += App->dt;
 }
+
+bool Map::CreateWalkabilityMap(int& width, int& height, uchar** buffer) const
+{
+	bool ret = false;
+	List_item<MapLayer*>* item;
+	item = data.layers.start;
+
+	for (item = data.layers.start; item != NULL; item = item->next)
+	{
+		MapLayer* layer = item->data;
+		if (layer->navigation == false)
+		{
+			continue;
+		}
+		uchar* map = new uchar[layer->width*layer->height];
+		memset(map, 1, layer->width*layer->height);
+
+		for (int y = 0; y < data.height; y++)
+		{
+			for (int x = 0; x < data.width; x++)
+			{
+				int i = (y * layer->width) +x;
+				int tile_id = layer->GetPath(x, y);
+				TileSet* tileset = (tile_id > 0) ? GetTilesetFromTileID(tile_id) : NULL;
+				if (tileset != NULL)
+				{
+					map[i] = (tile_id - tileset->firstgid) > 0 ? 0 : 1;
+				}
+			}
+		}
+
+		*buffer = map;
+		width = data.width;
+		height = data.height;
+		ret = true;
+
+		break;
+	}
+
+	return ret;
+}
+
+TileSet* Map::GetTilesetFromTileID(int id) const
+{
+	List_item<TileSet*>* item = data.tilesets.start;
+	TileSet* set = item->data;
+	while (item)
+	{
+		if (id < item->data->firstgid)
+		{
+			set = item->prev->data;
+			break;
+		}
+		set = item->data;
+		item = item->next;
+	}
+
+	return set;
+}
+
 
 // Called before quitting
 bool Map::CleanUp()
@@ -166,8 +223,8 @@ bool Map::CleanUp()
 	while (item != NULL)
 	{
 		item->data->animations.clear();
-		delete item->data->Tilerect;
-		delete item->data->PlayerTilerect;
+		// delete item->data->Tilerect;
+		// delete item->data->PlayerTilerect;
 
 		SDL_DestroyTexture(item->data->texture);
 		RELEASE(item->data);
@@ -262,7 +319,7 @@ bool Map::Load(const char* file_name)
 
 		if (ret == true)
 		{
-			ret = LoadObjectgroup(objectgroup, newObjectgroup);
+			ret = LoadObjectGroup(objectgroup, newObjectgroup);
 		}
 
 		data.objectgroups.add(newObjectgroup);
@@ -294,9 +351,18 @@ bool Map::Load(const char* file_name)
 			LOG("tile width: %d tile height: %d", l->width, l->height);
 			item_layer = item_layer->next;
 		}
-	}
-	map_loaded = ret;
 
+		int w, h;
+		uchar* data = NULL;
+		if (App->map->CreateWalkabilityMap(w, h, &data))
+		{
+			App->pathfinding->SetMap(w, h, data);
+		}
+
+		RELEASE_ARRAY(data);
+	}
+
+	map_loaded = ret;
 	return ret;
 }
 
@@ -312,8 +378,8 @@ bool Map::LoadMap()
 	}
 	else
 	{
-		data.start_position.x = map.child("properties").child("property").attribute("value").as_float();
-		data.start_position.y = map.child("properties").child("property").next_sibling().attribute("value").as_float();
+		data.startPosition.x = map.child("properties").child("property").attribute("value").as_float();
+		data.startPosition.y = map.child("properties").child("property").next_sibling().attribute("value").as_float();
 
 		data.width = map.attribute("width").as_int();
 		data.height = map.attribute("height").as_int();
@@ -461,10 +527,20 @@ bool Map::LoadTilesetAnimation(pugi::xml_node& tileset_node, TileSet* set)
 
 bool Map::LoadLayer(pugi::xml_node& node, MapLayer* layer)
 {
-	layer->name		= node.attribute("name").as_string();
-	layer->height	= node.attribute("height").as_uint();
-	layer->width	= node.attribute("width").as_uint();
+	layer->name = node.attribute("name").as_string();
+	layer->height = node.attribute("height").as_uint();
+	layer->width = node.attribute("width").as_uint();
 	layer->speed = node.child("properties").child("property").attribute("value").as_float();
+
+	if (strcmp(node.attribute("name").as_string(), "Navigation") == 0)
+	{
+		layer->speed = node.child("properties").child("property").next_sibling().attribute("value").as_float();
+		layer->navigation = node.child("properties").child("property").attribute("value").as_bool();
+	}
+	else
+	{
+		layer->navigation = false;
+	}
 
 	layer->data = new uint[layer->height*layer->width];
 	
@@ -479,17 +555,17 @@ bool Map::LoadLayer(pugi::xml_node& node, MapLayer* layer)
 	return true;
 }
 
-bool Map::LoadObjectgroup(pugi::xml_node& node, MapObjectgroup* objectgroup)
+bool Map::LoadObjectGroup(pugi::xml_node& node, MapObjectgroup* objectgroup)
 {
 
-	objectgroup->name	= node.attribute("name").as_string();
-	objectgroup->id		= node.attribute("id").as_uint();
+	objectgroup->name = node.attribute("name").as_string();
+	objectgroup->id = node.attribute("id").as_uint();
 
 	int AmountObjects = 0;
 	for (pugi::xml_node iterator_node = node.child("object"); iterator_node; iterator_node = iterator_node.next_sibling("object"), AmountObjects++) {}
 
-	objectgroup->objects_size	= AmountObjects;
-	objectgroup->objects		= new Object[AmountObjects];
+	objectgroup->objectsSize = AmountObjects;
+	objectgroup->objects = new Object[AmountObjects];
 	memset(objectgroup->objects, 0, AmountObjects * sizeof(Object));
 
 	int i = 0;
@@ -520,26 +596,33 @@ bool Map::LoadObjectgroup(pugi::xml_node& node, MapObjectgroup* objectgroup)
 		{
 			objectgroup->objects[i].type = ObjectType::DAMAGE;
 		}
-		else if (type == "warp")
+		else if (type == "teleport")
 		{
-			objectgroup->objects[i].type = ObjectType::WARP;
+			objectgroup->objects[i].type = ObjectType::TELEPORT;
 			
 			Properties::Property* temp = new Properties::Property;
 			temp->name = iterator_node.child("properties").child("property").attribute("name").as_string();
-			temp->data.v_string = iterator_node.child("properties").child("property").attribute("value").as_string();
+			temp->data.vString = iterator_node.child("properties").child("property").attribute("value").as_string();
 			objectgroup->objects[i].properties.list.add(temp);
+		}
+		else if (type == "enemy")
+		{
+			Properties::Property* temp = new Properties::Property;
+			temp->name = iterator_node.child("properties").child("property").attribute("name").as_string();
+			temp->data.vString = iterator_node.child("properties").child("property").attribute("value").as_string();
+			objectgroup->objects[i].properties.list.add(temp);
+			objectgroup->objects[i].type = ObjectType::ENEMY;
 		}
 		else
 		{
 			objectgroup->objects[i].type = ObjectType::UNKNOWN;
 		}
-
 	}
 	
 	return true;
 }
 
-value Properties::Get(const char* name, value* default_value) const
+value Properties::Get(const char* name, value* defaultValue) const
 {
 	List_item<Property*>* item = list.start;
 
@@ -550,5 +633,76 @@ value Properties::Get(const char* name, value* default_value) const
 		item = item->next;
 	}
 
-	return *default_value;
+	return *defaultValue;
+}
+
+iPoint Map::MapToWorld(int x, int y) const
+{
+	iPoint ret;
+	if (data.type == MAPTYPE_ORTHOGONAL)
+	{
+		ret.x = x * data.tile_width;
+		ret.y = y * data.tile_height;
+	}
+	else if (data.type == MAPTYPE_ISOMETRIC)
+	{
+		ret.x = (x - y) * (data.tile_width * 0.5f);
+		ret.y = (x + y) * (data.tile_height * 0.5f);
+	}
+	else
+	{
+		LOG("Map type error");
+		ret.x = x;
+		ret.y = y;
+	}
+
+	return ret;
+}
+
+iPoint Map::MapToWorldCentered(int x, int y) const
+{
+	iPoint ret;
+	if (data.type == MAPTYPE_ORTHOGONAL)
+	{
+		ret.x = x * data.tile_width + data.tile_width / 2;
+		ret.y = y * data.tile_height + data.tile_height / 2;
+	}
+	else if (data.type == MAPTYPE_ISOMETRIC)
+	{
+		ret.x = (x - y) * (data.tile_width * 0.5f);
+		ret.y = (x + y) * (data.tile_height * 0.5f);
+	}
+	else
+	{
+		LOG("Map type error");
+		ret.x = x;
+		ret.y = y;
+	}
+	
+	return ret;
+}
+
+iPoint Map::WorldToMap(int x, int y) const
+{
+	iPoint ret(0, 0);
+	if (data.type == MAPTYPE_ORTHOGONAL)
+	{
+		ret.x = x / data.tile_width;
+		ret.y = y / data.tile_height;
+	}
+	else if (data.type == MAPTYPE_ISOMETRIC)
+	{
+		float half_width = data.tile_width * 0.5f;
+		float half_height = data.tile_height * 0.5f;
+		ret.x = int((x / half_width + y / half_height) / 2);
+		ret.y = int((y / half_height - (x / half_width)) / 2);
+	}
+	else
+	{
+		LOG("Map type error");
+		ret.x = x;
+		ret.y = y;
+	}
+
+	return ret;
 }

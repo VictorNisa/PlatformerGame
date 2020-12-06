@@ -9,6 +9,7 @@
 #include "Map.h"
 #include "Scene.h"
 #include "Transition.h"
+#include "EntityManager.h"
 
 Scene::Scene() : Module()
 {
@@ -34,6 +35,7 @@ bool Scene::Start()
 	App->map->Load("Scene1.tmx");
 
 	App->audio->PlayMusic("Assets/audio/music/bgm.ogg" , 0.0f);
+	pathfindingTexture = App->tex->Load("Assets/maps/PathfindingTexture.png");
 
 	return true;
 }

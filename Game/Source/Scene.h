@@ -33,6 +33,7 @@ public:
 	bool CleanUp();
 
 private:
+	SDL_Texture* pathfindingTexture;
 };
 
 #endif // __SCENE_H__

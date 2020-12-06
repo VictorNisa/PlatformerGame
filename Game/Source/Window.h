@@ -35,13 +35,13 @@ public:
 	SDL_Window* window;
 
 	//The surface contained by the window
-	SDL_Surface* screen_surface;
+	SDL_Surface* screenSurface;
 
 private:
-	SString	title;
-	uint		width;
-	uint		height;
-	uint		scale;
+	SString title;
+	uint width;
+	uint height;
+	uint scale;
 };
 
 #endif // __WINDOW_H__

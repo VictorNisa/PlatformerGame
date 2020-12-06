@@ -18,12 +18,12 @@ public:
 
 private:
 
-	enum fade_step
+	enum FadeStep
 	{
-		none,
-		fade_to_black,
-		fade_from_black
-	} current_step = fade_step::none;
+		NONE,
+		FADE_TO_BLACK,
+		FADE_FROM_BLACK
+	} CurrentStep = FadeStep::NONE;
 
 public:
 
@@ -31,11 +31,11 @@ public:
 
 private:
 	
-	Uint32 start_time = 0;
-	Uint32 total_time = 0;
+	Uint32 startTime = 0;
+	Uint32 totalTime = 0;
 	SDL_Rect screen;
 	
-	const char* map_name;
+	const char* mapName;
 };
 
 #endif //__TRANSITION_H__

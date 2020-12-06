@@ -10,35 +10,47 @@
 #include "Log.h"
 #include "Audio.h"
 
-Players::Players() 
+Players::Players(float x, float y, EntityType Type) : Entity(x, y, Type)
 {
-	name.create("player");
+
 };
+
+Players::~Players()
+{
+
+}
 
 bool Players::Save(pugi::xml_node& node) const 
 {
 	LOG("Saving Player...");
+	node.append_attribute("EntityType") = "PLAYER";
+	// SAVING POINTS
 	pugi::xml_node points = node.append_child("points");
+
+	// SAVING POSITION
+	points.append_child("position").append_attribute("x") = position.x;
+	points.child("position").append_attribute("y") = position.y;
+
+	// SAVING PREVIOUS POSITION
+	points.append_child("prevPosition").append_attribute("x") = player.prevPosition.x;
+	points.child("prevPosition").append_attribute("y") = player.prevPosition.y;
 	
-	points.append_child("position").append_attribute("x") = player.position.x;
-	points.child("position").append_attribute("y") = player.position.y;
-	
-	points.append_child("prevposition").append_attribute("x") = player.prevposition.x;
-	points.child("prevposition").append_attribute("y") = player.prevposition.y;
-	
+	// SAVING LAST GROUND POSITION
 	points.append_child("lastGroundedPos").append_attribute("x") = player.lastGroundedPos.x;
 	points.child("lastGroundedPos").append_attribute("y") = player.lastGroundedPos.y;
 
+	// SAVING BOOLS
 	pugi::xml_node flags = node.append_child("flags");
-	flags.append_attribute("able_to_jump") = player.able_to_jump;
-	flags.append_attribute("able_to_dash") = player.able_to_dash;
+	flags.append_attribute("ableToJjump") = player.ableToJump;
+	flags.append_attribute("ableToDash") = player.ableToDash;
 	flags.append_attribute("dashing") = player.dashing;
 	flags.append_attribute("jumping") = player.jumping;
-	flags.append_attribute("drop_plat") = player.drop_plat;
+	flags.append_attribute("dropPlat") = player.dropPlat;
 	flags.append_attribute("playerGrounded") = player.playerGrounded;
 	flags.append_attribute("flip") = player.flip;
 	flags.append_attribute("godMode") = player.godMode;
 
+	// SAVING PLAYER STATE
 	node.append_attribute("playerstate") = player.playerState;
 
 	return true;
@@ -52,19 +64,23 @@ bool Players::Load(pugi::xml_node& node)
 
 	pugi::xml_node points = node.child("points");
 
-	player.position.x = points.child("position").attribute("x").as_float();
-	player.position.y = points.child("position").attribute("y").as_float();
+	// LOADING POSITION
+	position.x = points.child("position").attribute("x").as_float();
+	position.y = points.child("position").attribute("y").as_float();
 
-	player.prevposition.x = points.child("prevposition").attribute("x").as_float();
-	player.prevposition.y = points.child("prevposition").attribute("y").as_float();
+	// LOADING PREVIOUS POSITION
+	player.prevPosition.x = points.child("prevPosition").attribute("x").as_float();
+	player.prevPosition.y = points.child("prevPosition").attribute("y").as_float();
 
+	// LOADING LAST GROUND POSITION
 	player.lastGroundedPos.x = points.child("lastGroundedPos").attribute("x").as_float();
 	player.lastGroundedPos.y = points.child("lastGroundedPos").attribute("y").as_float();
 	
+	// LOADING BOOLS
 	pugi::xml_node flags = node.child("flags");
-	player.able_to_dash		= flags.attribute("able_to_dash").as_bool();
-	player.able_to_jump		= flags.attribute("able_to_jump").as_bool();
-	player.drop_plat		= flags.attribute("drop_plat").as_bool();
+	player.ableToDash		= flags.attribute("ableToDash").as_bool();
+	player.ableToJump		= flags.attribute("ableToJump").as_bool();
+	player.dropPlat		= flags.attribute("dropPlat").as_bool();
 	player.dashing			= flags.attribute("dashing").as_bool();
 	player.jumping			= flags.attribute("jumping").as_bool();
 	player.playerGrounded	= flags.attribute("playerGrounded").as_bool();
@@ -74,33 +90,34 @@ bool Players::Load(pugi::xml_node& node)
 	return true;
 }
 
-Players::~Players() 
-{
-
-};
-
 bool Players::Init() 
 {
 	return true;
 };
 
-bool Players::Awake(pugi::xml_node& conf) 
+bool Players::Awake() 
 {
-	player.acceleration.x = conf.child("acceleration").attribute("x").as_float();
-	player.acceleration.y = conf.child("acceleration").attribute("y").as_float();
-	player.speed.x =		conf.child("speed").attribute("x").as_float();
-	player.speed.y =		conf.child("speed").attribute("y").as_float();
-	player.maxSpeed.x =		conf.child("maxSpeed").attribute("x").as_float();
-	player.maxSpeed.y =		conf.child("maxSpeed").attribute("y").as_float();
-	player.gravity =		conf.child("gravity").attribute("value").as_float();
-	player.boxW =			conf.child("box").attribute("w").as_int();
-	player.boxH =			conf.child("box").attribute("h").as_int();
-	player.boxOffset_x =	conf.child("offset").attribute("x").as_int();
+	pugi::xml_document	configFile;
+	pugi::xml_node		config;
+
+	config = App->LoadConfig(configFile);
+
+	pugi::xml_node tmp = config.child("entities");
+
+	player.acceleration.x = tmp.child("player").child("acceleration").attribute("x").as_float();
+	player.acceleration.y = tmp.child("player").child("acceleration").attribute("y").as_float();
+	player.speed.x = tmp.child("player").child("speed").attribute("x").as_float();
+	player.speed.y = tmp.child("player").child("speed").attribute("y").as_float();
+	player.maxSpeed.x = tmp.child("player").child("maxSpeed").attribute("x").as_float();
+	player.maxSpeed.y = tmp.child("player").child("maxSpeed").attribute("y").as_float();
+	player.gravity = tmp.child("player").child("gravity").attribute("value").as_float();
+	player.boxW = tmp.child("player").child("box").attribute("w").as_int();
+	player.boxH = tmp.child("player").child("box").attribute("h").as_int();
+	player.boxOffset_x = tmp.child("player").child("offset").attribute("x").as_int();
 
 	App->audio->LoadFx("Assets/audio/fx/jump1.wav");
 	App->audio->LoadFx("Assets/audio/fx/jump2.wav");
 	App->audio->LoadFx("Assets/audio/fx/jump3.wav");
-
 	App->audio->LoadFx("Assets/audio/fx/dash.wav");
 	
 	return true;
@@ -109,6 +126,10 @@ bool Players::Awake(pugi::xml_node& conf)
 bool Players::Start() 
 {
 	StartPlayer();
+	player.attackBox = { 0, 0, 32, 64 };
+	dashTimerCheck = new PerfTimer;
+	jumpKeyBoolTimer = new PerfTimer;
+
 	return true;
 };
 
@@ -121,105 +142,56 @@ bool Players::PreUpdate()
 	
 	player.SetGroundState(false);
 
-	if (player.playerState != jumping && player.playerState != falling && !player.dashing)
+	if (player.playerState != JUMPING && player.playerState != FALLING && !player.dashing)
 	{
-		player.playerState = idle;
-
-		if (App->input->GetKey(SDL_SCANCODE_S) == KEY_REPEAT || App->input->GetKey(SDL_SCANCODE_DOWN) == KEY_REPEAT)
-		{
-			player.playerState = crouch;
-			player.drop_plat = true;
-		}
-		if (App->input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT 
-			|| App->input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT 
-			|| App->input->GetKey(SDL_SCANCODE_RIGHT) == KEY_REPEAT 
-			|| App->input->GetKey(SDL_SCANCODE_LEFT) == KEY_REPEAT)
-		{
-			player.playerState = running;
-		}
+		player.playerState = IDLE;
+		RunCheck();
 	}
 
-	if (player.able_to_dash && !player.dashing )
+	if (!player.godMode && !player.dashing)
 	{
-		if (App->input->GetKey(SDL_SCANCODE_LSHIFT) == KEY_DOWN || App->input->GetKey(SDL_SCANCODE_RSHIFT) == KEY_DOWN)
-		{
-			App->audio->PlayFx( 4 , 0 );
-			if (player.flip)
-			{
-				player.playerState = dashLeft;
-			}
-			else
-			{
-				player.playerState = dashRight;
-			}
-			if (App->input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT || App->input->GetKey(SDL_SCANCODE_RIGHT) == KEY_REPEAT)
-			{
-				player.playerState = dashRight;
-			}
-			if (App->input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT || App->input->GetKey(SDL_SCANCODE_LEFT) == KEY_REPEAT)
-			{
-				player.playerState = dashLeft;
-			}
-			player.able_to_dash = false;
-		}
+		JumpInput();
 	}
 
-	if (!player.godMode)
+	if (player.ableToDash && !player.dashing)
 	{
-		if (App->input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
-		{
-			if (player.able_to_jump)
-			{
-				jumpSound = rand() % 3 + 1;
-				App->audio->PlayFx(jumpSound,0);
-
-				player.playerState = jumping;
-
-				player.speed.y = 0;	
-
-			}
-		}
+		DashInput();
 	}
 
 	if (App->input->GetKey(SDL_SCANCODE_S) == KEY_REPEAT || App->input->GetKey(SDL_SCANCODE_DOWN) == KEY_REPEAT)
 	{
-		player.drop_plat = true;
+		player.dropPlat = true;
 	}
-	else 
+	else
 	{
-		player.drop_plat = false;
+		player.dropPlat = false;
 	}
 
 	if (App->input->GetKey(SDL_SCANCODE_F10) == KEY_DOWN)
 	{
 		GodMode();
 	}
+
 	return true;
 };
 
 bool Players::Update(float dt)
 {
+	player.prevPosition = position;
+
 	if (player.freeze == true)
 	{
 		return true;
 	}
-	
-	player.prevposition = player.position;
-	dashTime++;
 
 	if (player.cealing || player.onPlatform && !player.jumping)
 	{
 		player.speed.y = 0;
 	}
 
-	if ((player.playerState == dashRight || player.playerState == dashLeft) && !player.dashing)
-	{
-		dashTime = 0;
-	}
-
 	if (!player.dashing)
 	{
-		check_x_move();
+		checkXMove(dt);
 	}
 
 	if (!player.godMode)
@@ -228,110 +200,51 @@ bool Players::Update(float dt)
 		{
 			switch (player.playerState)
 			{
-			case idle:
+			case IDLE:
 
 				player.animation = "idle";
 				player.speed.x = 0;
 
 				break;
-			case running:
+			case RUNNING:
 
 				player.animation = "run";
 
 				break;
-			case crouch:
+			case CROUCHING:
 
 				player.animation = "crouch";
 
 				break;
-			case jumping:
+			case JUMPING:
 
-				player.speed.y -= player.acceleration.y;
-				player.jumping = true;
-				player.able_to_jump = false;
+				Jump();
 				
 				break;
-			case falling:
+			case FALLING:
 
-				player.jumping = true;
-				player.able_to_jump = false;
-
-				break;
-			case dashLeft:
-
-				player.animation = "dash";
-				player.speed.x = -player.maxSpeed.x * 2;
-				player.dashing = true;
+				Fall();
 
 				break;
-			case dashRight:
+			case LDASHING:
 
-				player.animation = "dash";
-				player.speed.x = player.maxSpeed.x * 2;
-				player.dashing = true;
+				Dash();
+
+				break;
+			case RDASHING:
+
+				Dash();
+
+				break;
+			case ATTACKING:
+
+				Attack();
 
 				break;
 			}
 		}
-		
-		if (player.playerGrounded || player.onPlatform)
-		{
-			player.able_to_jump = true;
-			player.jumping = false;
 
-			if (!player.dashing)
-			{
-				player.able_to_dash = true;
-				player.playerState = idle;
-			}
-		}
-		else
-		{
-			if (!player.dashing)
-			{
-				player.playerState = falling;
-			}
-		}
-
-		if (player.dashing)
-		{
-			if (dashTime > 10)
-			{
-				player.playerState = falling;
-				player.dashing = false;
-				player.speed.y = 0;
-			}
-		}
-		else
-		{
-			if (player.jumping )
-			{
-				player.speed.y += player.gravity;
-
-				if (player.speed.y >= player.maxSpeed.y)
-				{
-					player.speed.y = player.maxSpeed.y;
-				}
-
-				if (player.speed.y < 0)
-				{
-					player.animation = "jump";
-				}
-				else
-				{
-					player.animation = "fall";
-				}
-			}
-
-			player.position.y += player.speed.y;
-		}
-
-		player.position.x += player.speed.x;
-
-		if (player.wall)
-		{
-			player.speed.x = 0;
-		}
+		GroundedLogic();
 		
 	}
 	else
@@ -340,21 +253,30 @@ bool Players::Update(float dt)
 
 		if (App->input->GetKey(SDL_SCANCODE_W) == KEY_REPEAT)
 		{
-			MoveUp();
+			MoveUp(dt);
 		}
 		else if (App->input->GetKey(SDL_SCANCODE_S) == KEY_REPEAT)
 		{
-			MoveDown();
+			MoveDown(dt);
 		}
-		player.position.x += player.speed.x * 2;
+		if (App->input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT || App->input->GetKey(SDL_SCANCODE_LEFT) == KEY_REPEAT)
+		{
+			player.speed.x = -player.maxSpeed.x;
+		}
+		else if (App->input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT || App->input->GetKey(SDL_SCANCODE_RIGHT) == KEY_REPEAT)
+		{
+			player.speed.x = player.maxSpeed.x;
+		}
+
+		position.x += player.speed.x * 2;
 	}
 
-	player.playerBox.x = player.position.x;
-	player.playerBox.y = player.position.y;
+	player.playerBox.x = position.x;
+	player.playerBox.y = position.y;
 
-	App->map->DrawAnimation(player.animation,"Char",player.flip);
+	App->map->DrawAnimation(player.animation,"Char",position, aInfo, player.flip);
 	
-	player.collider->SetPos(player.position.x + player.boxOffset_x, player.position.y);
+	player.collider->SetPos(position.x + player.boxOffset_x, position.y);
 
 	player.cealing = false;
 	player.wall = false;
@@ -387,14 +309,15 @@ bool Players::StartPlayer()
 {
 	if(App->fade->playerReset == true)
 
-	player.position = App->map->data.start_position;
-	player.playerBox = { (int)player.position.x,(int)player.position.y,player.boxW,player.boxH };
-	player.collider = App->collisions->AddCollider(player.playerBox, ObjectType::PLAYER, this);
-	player.able_to_jump = false;
-	player.able_to_dash = false;
+	position = App->map->data.startPosition;
+	player.playerBox = { position.x,position.y,player.boxW,player.boxH };
+	player.collider = App->collisions->AddCollider(player.playerBox, ObjectType::PLAYER, App->entities, (Entity*)this);
+	
+	player.ableToJump = false;
+	player.ableToDash = false;
 	player.dashing = false;
 	player.jumping = false;
-	player.drop_plat;
+	player.dropPlat;
 	player.flip = false;
 	player.godMode = false;
 	player.cealing = false;
@@ -403,100 +326,101 @@ bool Players::StartPlayer()
 	player.movingRight = false;
 	player.movingLeft = false;
 	player.justLoaded = false;
+	player.attacking = false;
 	
 	return true;
 }
 
 void Players::OnCollision(Collider* A, Collider* B) 
 {
-	if (player.godMode) return;
-	
-	if (B->type == ObjectType::PLAYER)
-	{
-		Collider temp = *A;
-		A = B;
-		B = &temp;
-	}
-	if (A->type != ObjectType::PLAYER)
-	{
-		return;
-	}
-
-	//-------------COLLISSIONS (TODO: CHANGE THEM TO RAMON'S)----------//
-	if (A->type == ObjectType::PLAYER && B->type == ObjectType::SOLID)
-	{
-		if (player.prevposition.y > (B->rect.y + B->rect.h - 1)) 
-		{
-			player.position.y = B->rect.y + B->rect.h ;
-			player.cealing = true;
-		}
-		else if (player.position.y + (A->rect.h* 1.0f/4.0f) < B->rect.y + B->rect.h  && player.position.y + (A->rect.h* 3.0f / 4.0f) > B->rect.y ) 
-		{
-			player.wall = true;
-			LOG("Touching WALL");
-
-			if ((A->rect.x + A->rect.w) < (B->rect.x + B->rect.w / 4)) 
-			{
-				player.position.x = B->rect.x -A->rect.w - player.boxOffset_x -1;
-			}
-			else if (A->rect.x  > (B->rect.x + B->rect.w*3/4)) 
-			{
-				player.position.x = B->rect.x + B->rect.w - player.boxOffset_x -1; 
-			}
-		}
-
-		else if (player.position.y + A->rect.h - player.maxSpeed.y -5 < B->rect.y && A->rect.x < B->rect.x + B->rect.w && A->rect.x + A->rect.w > B->rect.x && player.justLoaded == false)
-		{
-			if (player.speed.y > 0)
-			{
-				player.speed.y = 0;
-			}
-			player.position.y = B->rect.y - player.collider->rect.h + 1;
-			player.SetGroundState(true);
-		}
-	}
-
-
-	// ------------ TODO: CHANGE THEM FOR RAMON'S---------------------//
-	if (A->type == ObjectType::PLAYER && B->type == ObjectType::PLATFORM)
-	{
-		if (player.drop_plat == false ) 
-		{
-			if ((player.prevposition.y + player.collider->rect.h) < B->rect.y + (B->rect.h / 2.0f) && (player.prevposition.y + player.collider->rect.h) > B->rect.y && player.speed.y >= 0) 
-			{
-				player.position.y = B->rect.y - player.collider->rect.h + 1;
-				player.SetGroundState(true);
-				player.able_to_jump = false;
-				player.onPlatform = true;
-			}
-			else if ((player.position.y >= player.prevposition.y) && (player.prevposition.y + player.collider->rect.h) < B->rect.y && player.speed.y >= 0) 
-			{
-				player.position.y = B->rect.y - player.collider->rect.h + 1;
-				player.SetGroundState(true);
-				player.able_to_jump = false;
-				player.onPlatform = true;
-			}
-		}
-	}
-
-	if (A->type == ObjectType::PLAYER && B->type == ObjectType::WARP)
-	{
-		App->fade->FadeToBlack(B->userdata->Get("MapToLoad").v_string);
-	}
+//	if (player.godMode) return;
+//	
+//	if (B->type == ObjectType::PLAYER)
+//	{
+//		Collider temp = *A;
+//		A = B;
+//		B = &temp;
+//	}
+//	if (A->type != ObjectType::PLAYER)
+//	{
+//		return;
+//	}
+//
+//	//-------------COLLISSIONS (TODO: CHANGE THEM TO RAMON'S)----------//
+//	if (A->type == ObjectType::PLAYER && B->type == ObjectType::SOLID)
+//	{
+//		if (player.prevPosition.y > (B->rect.y + B->rect.h - 1)) 
+//		{
+//			player.position.y = B->rect.y + B->rect.h ;
+//			player.cealing = true;
+//		}
+//		else if (player.position.y + (A->rect.h* 1.0f/4.0f) < B->rect.y + B->rect.h  && player.position.y + (A->rect.h* 3.0f / 4.0f) > B->rect.y ) 
+//		{
+//			player.wall = true;
+//			LOG("Touching WALL");
+//
+//			if ((A->rect.x + A->rect.w) < (B->rect.x + B->rect.w / 4)) 
+//			{
+//				player.position.x = B->rect.x -A->rect.w - player.boxOffset_x -1;
+//			}
+//			else if (A->rect.x  > (B->rect.x + B->rect.w*3/4)) 
+//			{
+//				player.position.x = B->rect.x + B->rect.w - player.boxOffset_x -1; 
+//			}
+//		}
+//
+//		else if (player.position.y + A->rect.h - player.maxSpeed.y -5 < B->rect.y && A->rect.x < B->rect.x + B->rect.w && A->rect.x + A->rect.w > B->rect.x && player.justLoaded == false)
+//		{
+//			if (player.speed.y > 0)
+//			{
+//				player.speed.y = 0;
+//			}
+//			player.position.y = B->rect.y - player.collider->rect.h + 1;
+//			player.SetGroundState(true);
+//		}
+//	}
+//
+//
+//	// ------------ TODO: CHANGE THEM FOR RAMON'S---------------------//
+//	if (A->type == ObjectType::PLAYER && B->type == ObjectType::PLATFORM)
+//	{
+//		if (player.dropPlat == false ) 
+//		{
+//			if ((player.prevPosition.y + player.collider->rect.h) < B->rect.y + (B->rect.h / 2.0f) && (player.prevPosition.y + player.collider->rect.h) > B->rect.y && player.speed.y >= 0) 
+//			{
+//				player.position.y = B->rect.y - player.collider->rect.h + 1;
+//				player.SetGroundState(true);
+//				player.ableToJump = false;
+//				player.onPlatform = true;
+//			}
+//			else if ((player.position.y >= player.prevPosition.y) && (player.prevPosition.y + player.collider->rect.h) < B->rect.y && player.speed.y >= 0) 
+//			{
+//				player.position.y = B->rect.y - player.collider->rect.h + 1;
+//				player.SetGroundState(true);
+//				player.ableToJump = false;
+//				player.onPlatform = true;
+//			}
+//		}
+//	}
+//
+//	if (A->type == ObjectType::PLAYER && B->type == ObjectType::TELEPORT)
+//	{
+//		App->fade->FadeToBlack(B->userData->Get("MapToLoad").vString);
+//	}
 }
 
-void Players::check_x_move()
+void Players::checkXMove(float dt)
 {
 	if (App->input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT || App->input->GetKey(SDL_SCANCODE_RIGHT) == KEY_REPEAT)
 	{
 		player.movingRight = true;
-		MoveRight();
+		MoveRight(dt);
 		player.flip = false;
 	}
 	else if (App->input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT || App->input->GetKey(SDL_SCANCODE_LEFT) == KEY_REPEAT)
 	{
 		player.movingLeft = true;
-		MoveLeft();
+		MoveLeft(dt);
 		player.flip = true;
 	}
 	else
@@ -505,34 +429,66 @@ void Players::check_x_move()
 	}
 }
 
-void Players::MoveRight()
+void Players::JumpInput()
 {
-	player.speed.x += player.acceleration.x;
-
-	if (player.speed.x > player.maxSpeed.x)
+	if (App->input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
 	{
-		player.speed.x = player.maxSpeed.x;
+		if (player.ableToJump)
+		{
+			player.playerState = JUMPING;
+			jumpKeyBool = true;
+			jumpKeyBoolTimer->Start();
+			player.speed.y = 0;
+		}
+	}
+	else if (App->input->GetKey(SDL_SCANCODE_SPACE) == KEY_REPEAT && jumpKeyBool && jumpKeyBoolTimer->ReadMs() < 250.0f && !player.dashing)
+	{
+		player.playerState = JUMPING;
+		jumpKeyBool = true;
+	}
+	else
+	{
+		jumpKeyBool = false;
 	}
 }
 
-void Players::MoveLeft()
+void Players::DashInput()
 {
-	player.speed.x -= player.acceleration.x; 
-
-	if (player.speed.x < -player.maxSpeed.x)
+	if (App->input->GetKey(SDL_SCANCODE_LSHIFT) == KEY_DOWN || App->input->GetKey(SDL_SCANCODE_RSHIFT) == KEY_DOWN)
 	{
-		player.speed.x = -player.maxSpeed.x;
+		App->audio->PlayFx(4, 0);
+
+		if (player.flip || App->input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT || App->input->GetKey(SDL_SCANCODE_LEFT) == KEY_REPEAT)
+		{
+			player.playerState = LDASHING;
+		}
+		else if (!player.flip || App->input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT || App->input->GetKey(SDL_SCANCODE_RIGHT) == KEY_REPEAT)
+		{
+			player.playerState = RDASHING;
+		}
+
+		dashTime = 0;
+
+		dashTimerCheck->Start();
+
+		player.ableToDash = false;
 	}
 }
 
-void Players::MoveDown()
+void Players::RunCheck()
 {
-	player.position.y += player.maxSpeed.y;
-}
-
-void Players::MoveUp()
-{
-	player.position.y -= player.maxSpeed.y;
+	if (App->input->GetKey(SDL_SCANCODE_S) == KEY_REPEAT || App->input->GetKey(SDL_SCANCODE_DOWN) == KEY_REPEAT)
+	{
+		player.playerState = CROUCHING;
+		player.dropPlat = true;
+	}
+	if (App->input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT
+		|| App->input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT
+		|| App->input->GetKey(SDL_SCANCODE_RIGHT) == KEY_REPEAT
+		|| App->input->GetKey(SDL_SCANCODE_LEFT) == KEY_REPEAT)
+	{
+		player.playerState = RUNNING;
+	}
 }
 
 void Players::GodMode()
@@ -545,4 +501,150 @@ void Players::GodMode()
 	{
 		player.godMode = true;
 	}
+}
+
+bool Players::Dash()
+{
+	player.animation = "dash";
+	if (!player.wall)
+	{
+		if (player.playerState == LDASHING)
+		{
+			player.speed.x = -player.maxSpeed.x * 2 * App->dt;
+		}
+		else
+		{
+			player.speed.x = player.maxSpeed.x * 2 * App->dt;
+		}
+	}
+	player.dashing = true;
+
+	if (dashTimerCheck->ReadMs() >= 25.0f && !player.attackColliderBool)
+	{
+		player.attackCollider = App->collisions->AddCollider(player.attackBox,ObjectType::ATTACK,App->entities );
+		player.attackColliderBool = true;
+	}
+
+	if (player.attackColliderBool)
+	{
+		if (!player.flip)
+		{
+			player.attackCollider->SetPos(position.x + 70, position.y);
+		}
+		else
+		{
+			player.attackCollider->SetPos(position.x - 20, position.y);
+		}
+	}
+
+
+	if (dashTimerCheck->ReadMs() >= 200.0f)
+	{
+		player.attackCollider->toDelete = true;
+		player.attackColliderBool = false;
+	}
+
+	if (dashTimerCheck->ReadMs() >= 225.0f)
+	{
+		player.playerState = FALLING;
+		player.dashing = false;
+		player.speed.y = 0;
+	}
+	return true;
+}
+
+void Players::Jump()
+{
+	player.animation = "jump";
+	player.jumping = true;
+	player.ableToJump = false;
+
+	if (player.speed.y > 0)
+	{
+		player.playerState = FALLING;
+	}
+
+	player.speed.y -= player.acceleration.y * App->dt;
+	player.speed.y += (player.gravity * 0.8f) * App->dt;
+	position.y += player.speed.y;
+}
+
+void Players::Fall()
+{
+	player.animation = "fall";
+	player.jumping = true;
+	player.ableToJump = false;
+
+	player.speed.y += player.gravity * App->dt;
+	position.y += player.speed.y;
+}
+
+void Players::GroundedLogic()
+{
+	if (player.playerGrounded || player.onPlatform)
+	{
+		player.ableToJump = true;
+		player.jumping = false;
+
+		if (!player.dashing)
+		{
+			player.ableToDash = true;
+			player.playerState = IDLE;
+		}
+	}
+	else
+	{
+		if (!player.dashing)
+		{
+			player.playerState = FALLING;
+		}
+	}
+
+	if (player.speed.y >= player.maxSpeed.y * App->dt)
+	{
+		player.speed.y = player.maxSpeed.y * App->dt;
+	}
+
+	position.x += player.speed.x;
+
+	if (player.wall)
+	{
+		player.speed.x = 0;
+	}
+}
+
+void Players::Attack()
+{
+	// TODO: Implement attacking
+}
+
+void Players::MoveRight(float dt)
+{
+	player.speed.x += player.acceleration.x * dt;
+
+	if (player.speed.x > player.maxSpeed.x*dt)
+	{
+		player.speed.x = player.maxSpeed.x*dt;
+	}
+
+}
+
+void Players::MoveLeft(float dt)
+{
+	player.speed.x -= player.acceleration.x*dt;
+
+	if (player.speed.x < -player.maxSpeed.x*dt)
+	{
+		player.speed.x = -player.maxSpeed.x*dt;
+	}
+}
+
+void Players::MoveDown(float dt)
+{
+	position.y += player.maxSpeed.y*dt;
+}
+
+void Players::MoveUp(float dt)
+{
+	position.y -= player.maxSpeed.y*dt;
 }

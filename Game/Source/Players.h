@@ -1,23 +1,25 @@
 #ifndef __PLAYER_H__
 #define __PLAYER_H__
 
-#include "Module.h"
+#include "PugiXml/src/pugixml.hpp"
 #include "Point.h"
 #include "Render.h"
 #include "Input.h"
-
+#include "PerfTimer.h"
+#include "EntityManager.h"
 
 struct Collider;
 
 enum PlayerState 
 {
-	idle,
-	running,
-	jumping,
-	falling,
-	crouch,
-	dashLeft,
-	dashRight
+	IDLE,
+	RUNNING,
+	JUMPING,
+	FALLING,
+	CROUCHING,
+	LDASHING,
+	RDASHING,
+	ATTACKING
 };
 
 struct Player 
@@ -25,19 +27,19 @@ struct Player
 	Point<float> acceleration;
 	Point<float> speed;
 	Point<float> maxSpeed;
-	Point<float> position;
-	Point<float> prevposition;
+	// Point<float> position;
+	iPoint prevPosition;
 	Point<float> lastGroundedPos;
 
 	SString animation;
 
 	float gravity; 
 
-	bool able_to_jump;
-	bool able_to_dash;
+	bool ableToJump;
+	bool ableToDash;
 	bool dashing;
 	bool jumping;
-	bool drop_plat;
+	bool dropPlat;
 	bool playerGrounded;
 	bool flip;
 	bool godMode;
@@ -47,6 +49,7 @@ struct Player
 	bool movingRight;
 	bool movingLeft;
 	bool justLoaded;
+	bool attacking;
 	bool freeze = false;
 
 	int boxW;
@@ -55,33 +58,29 @@ struct Player
 
 	SDL_Rect playerBox;
 	PlayerState playerState;
-	Collider*	collider;
+	Collider* collider;
+	Collider* attackCollider;
+	SDL_Rect attackBox;
+	bool attackColliderBool = false;
 
 	inline void SetGroundState(bool state) 
 	{
-		if (playerGrounded == true) 
-		{
-			lastGroundedPos = position;
-		}
 		playerGrounded = state;
 	};
 };
 
-class Players : public Module 
+class Players : public Entity 
 {
 public:
 
-	Players();
+	Players(float x, float y, EntityType Type);
 
 	// Destructor
 	virtual ~Players();
 
-	bool Save(pugi::xml_node&) const;
-	bool Load(pugi::xml_node&);
-
 	bool Init();
 
-	bool Awake(pugi::xml_node&);
+	bool Awake();
 
 	bool Start();
 	bool PreUpdate();
@@ -90,28 +89,44 @@ public:
 
 	bool CleanUp();
 
-	void check_x_move();
-	void MoveRight();
-	void MoveLeft();
-	void MoveUp();
-	void MoveDown();
+	void checkXMove(float dt);
+	void MoveRight(float dt);
+	void MoveLeft(float dt);
+	void MoveUp(float dt);
+	void MoveDown(float dt);
+	void DashInput();
+	void JumpInput();
+	void RunCheck();
+	void Jump();
+	void Fall();
+	void Attack();
 
 	void GodMode();
 	bool StartPlayer();
+	bool Dash();
+	void GroundedLogic();
 
 	void Players::OnCollision(Collider* A, Collider* B);
 
+	virtual bool Save(pugi::xml_node & node) const;
+	virtual bool Load(pugi::xml_node & node);
+
 private:
 
-	
 public:
 
 	Player player;
 	
 private:
 
+	bool jumpKeyBool = false;
+	float gravityTimer = 0;
+
 	int dashTime  = 0;
 	int jumpSound = 1;
+
+	PerfTimer* dashTimerCheck;
+	PerfTimer* jumpKeyBoolTimer;
 };
 
 #endif

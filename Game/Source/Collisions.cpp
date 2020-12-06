@@ -4,7 +4,7 @@
 #include "Render.h"
 #include "Input.h"
 
-Collisions::Collisions() : Module(), debug_colliders(false)
+Collisions::Collisions() : Module(), debugColliders(false)
 {
 	name.create("collisions");
 }
@@ -28,35 +28,35 @@ bool Collisions::Start()
 
 bool Collisions::PreUpdate() 
 {
-	List_item<Collider*>* Coll_iterator = colliders.start;
-	while (Coll_iterator != nullptr) 
+	List_item<Collider*>* collIterator = colliders.start;
+	while (collIterator != nullptr) 
 	{
-		if (Coll_iterator->data->to_delete == true)
+		if (collIterator->data->toDelete == true)
 		{
-			colliders.del(Coll_iterator);
+			colliders.del(collIterator);
 		}
 
-		Coll_iterator = Coll_iterator->next;
+		collIterator = collIterator->next;
 	}
 
 	// Calculate collisions
 	Collider* c1;
 	Collider* c2;
 
-	Coll_iterator = colliders.start;
-	while (Coll_iterator != nullptr) 
+	collIterator = colliders.start;
+	while (collIterator != nullptr) 
 	{
-		c1 = Coll_iterator->data;
+		c1 = collIterator->data;
 		
-		List_item<Collider*>* Coll_iterator2 = colliders.start;
+		List_item<Collider*>* collIterator2 = colliders.start;
 
-		while (Coll_iterator2 != nullptr) 
+		while (collIterator2 != nullptr) 
 		{
-			c2 = Coll_iterator2->data;
+			c2 = collIterator2->data;
 
 			if (c1 != c2) 
 			{
-				if (c1->CheckCollision(c2->rect) == true && (c1->type == ObjectType::PLAYER || c2->type == ObjectType::PLAYER))
+				if (c1->CheckCollision(c2->rect) == true)
 				{
 					if (c1->callback)
 						c1->callback->OnCollision(c1, c2);
@@ -65,9 +65,9 @@ bool Collisions::PreUpdate()
 						c2->callback->OnCollision(c2, c1);
 				}
 			}
-			Coll_iterator2 = Coll_iterator2->next;
+			collIterator2 = collIterator2->next;
 		}
-		Coll_iterator = Coll_iterator->next;
+		collIterator = collIterator->next;
 	}
 
 	return true;
@@ -84,42 +84,46 @@ void Collisions::DebugDraw()
 {
 	if (App->input->GetKey(SDL_SCANCODE_F9) == KEY_DOWN)
 	{
-		if (debug_colliders)
+		if (debugColliders)
 		{
-			debug_colliders = false;
+			debugColliders = false;
 		}
 		else 
 		{
-			debug_colliders = true;
+			debugColliders = true;
 		}
 	}
 
-	if (debug_colliders == false)
+	if (debugColliders == false)
 		return;
 
 	Uint8 alpha = 80; 	//Alpha value for all debug colliders
-	List_item<Collider*>* Coll_iterator = colliders.start;
-	while (Coll_iterator != nullptr) 
+	List_item<Collider*>* collIterator = colliders.start;
+	while (collIterator != nullptr) 
 	{
-		switch (Coll_iterator->data->type)
+		switch (collIterator->data->type)
 		{
 		case ObjectType::PLATFORM:
-			App->render->DrawQuad(Coll_iterator->data->rect, 255, 255, 255, alpha);
+			App->render->DrawQuad(collIterator->data->rect, 255, 255, 255, alpha);
 			break;
 		case ObjectType::SOLID:
-			App->render->DrawQuad(Coll_iterator->data->rect, 255, 0, 0, alpha);
+			App->render->DrawQuad(collIterator->data->rect, 255, 0, 0, alpha);
 			break;
 		case ObjectType::DAMAGE:
-			App->render->DrawQuad(Coll_iterator->data->rect, 0, 0, 255, alpha);
+			App->render->DrawQuad(collIterator->data->rect, 0, 0, 255, alpha);
 			break;
 		case ObjectType::PLAYER:
-			App->render->DrawQuad(Coll_iterator->data->rect, 0, 255, 0, alpha);
+			App->render->DrawQuad(collIterator->data->rect, 0, 255, 0, alpha);
 			break;
-		case ObjectType::WARP:
-			App->render->DrawQuad(Coll_iterator->data->rect, 50, 200, 147, alpha);
+		case ObjectType::TELEPORT:
+			App->render->DrawQuad(collIterator->data->rect, 50, 200, 147, alpha);
 			break;
+		case ObjectType::ATTACK:
+			App->render->DrawQuad(collIterator->data->rect, 255, 0, 0, alpha);
+		case ObjectType::ENEMY:
+			App->render->DrawQuad(collIterator->data->rect, 255, 75, 0, alpha);
 		}
-		Coll_iterator = Coll_iterator->next;
+		collIterator = collIterator->next;
 	}
 }
 
@@ -134,14 +138,15 @@ bool Collisions::CleanUp()
 };
 
 
-Collider* Collisions::AddCollider(SDL_Rect rect, ObjectType type, Module* callback, Properties* userdata)
+Collider* Collisions::AddCollider(SDL_Rect rect, ObjectType type, Module* callback, Entity* entity, Properties* userData)
 {
 	Collider* ret = new Collider;
 
 	ret->callback = callback;
 	ret->rect = rect;
 	ret->type = type;
-	ret->userdata = userdata;
+	ret->userData = userData;
+	ret->entity = entity;
 
 	colliders.add(ret);
 	
@@ -154,10 +159,30 @@ void Collisions::LoadFromMap()
 	List_item<MapObjectgroup*>* list_i = App->map->data.objectgroups.start;
 	while (list_i != nullptr) 
 	{
-		for (int i = 0; i < list_i->data->objects_size; i++) 
+		for (int i = 0; i < list_i->data->objectsSize; i++) 
 		{
-			AddCollider(*list_i->data->objects[i].box, list_i->data->objects[i].type, nullptr, &list_i->data->objects[i].properties);
+			if (list_i->data->objects[i].type == ObjectType::ENEMY)
+			{
+				if (strcmp(list_i->data->objects[i].properties.list.start->data->data.vString, "FLYING_ENEMY") == 0)
+				{
+					App->entities->CreateEntity(list_i->data->objects[i].box->x, list_i->data->objects[i].box->y, FLYING_ENEMY);
+				}
+				else if (strcmp(list_i->data->objects[i].properties.list.start->data->data.vString, "WALKING_ENEMY") == 0)
+				{
+					App->entities->CreateEntity(list_i->data->objects[i].box->x, list_i->data->objects[i].box->y, WALKING_ENEMY);
+				}
+				else if (strcmp(list_i->data->objects[i].properties.list.start->data->data.vString, "PLAYER") == 0)
+				{
+					App->entities->CreateEntity(list_i->data->objects[i].box->x, list_i->data->objects[i].box->y, PLAYER);
+				}
+
+			}
+			else 
+			{
+			AddCollider(*list_i->data->objects[i].box, list_i->data->objects[i].type, nullptr, nullptr, &list_i->data->objects[i].properties);
+			}
 		}
+
 		list_i = list_i->next;
 	}
 }

@@ -4,6 +4,8 @@
 #include "List.h"
 #include "Module.h"
 #include "PugiXml\src\pugixml.hpp"
+#include "PerfTimer.h"
+#include "Timer.h"
 
 // Modules
 class Window;
@@ -13,9 +15,11 @@ class Textures;
 class Audio;
 class Scene;
 class Map;
+class Pathfinding;
 class Players;
 class Collisions;
 class Transition;
+class EntityManager;
 
 class Application
 {
@@ -52,10 +56,12 @@ public:
 	void SaveGame() const;
 	void GetSaveGames(List<SString>& list_to_fill) const;
 
-private:
-
 	// Load config file
 	pugi::xml_node LoadConfig(pugi::xml_document&) const;
+
+private:
+
+
 
 	// Call modules before each loop iteration
 	void PrepareUpdate();
@@ -86,25 +92,44 @@ public:
 	Audio* audio;
 	Scene* scene;
 	Map* map;
+	Pathfinding* pathfinding;
 	Players* player;
 	Collisions* collisions;
 	Transition* fade;
+	EntityManager* entities;
+	
+	float dt;
+	bool doLogic = false;
+	pugi::xml_node config;
 
 private:
 
 	List<Module*> modules;
 	uint frames;
-	float dt;
+	// float dt;
 	int argc;
 	char** args;
 
 	SString title;
 	SString organization;
 
-	mutable bool want_to_save;
-	bool want_to_load;
-	SString load_game; 
-	mutable SString save_game;
+	float accumulatedTime = 0.0f;
+
+	mutable bool wantToSave;
+	bool wantToLoad;
+	SString loadGame; 
+	mutable SString saveGame;
+
+	PerfTimer pTimer;
+	PerfTimer delayTimer;
+	uint64 frameCount = 0;
+	Timer startupTime;
+	Timer frameTime;
+	Timer lastSecFrameTime;
+	uint32 lastSecFrameCount = 0;
+	uint32 prevLastSecFrameCount = 0;
+	int frameRate;
+
 };
 
 extern Application* App; // No student is asking me about that ... odd :-S

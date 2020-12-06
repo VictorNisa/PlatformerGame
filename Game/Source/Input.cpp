@@ -13,7 +13,7 @@ Input::Input() : Module()
 
 	keyboard = new KeyState[MAX_KEYS];
 	memset(keyboard, KEY_IDLE, sizeof(KeyState) * MAX_KEYS);
-	memset(mouse_buttons, KEY_IDLE, sizeof(KeyState) * NUM_MOUSE_BUTTONS);
+	memset(mouseButtons, KEY_IDLE, sizeof(KeyState) * NUM_MOUSE_BUTTONS);
 }
 
 // Destructor
@@ -72,11 +72,11 @@ bool Input::PreUpdate()
 
 	for(int i = 0; i < NUM_MOUSE_BUTTONS; ++i)
 	{
-		if(mouse_buttons[i] == KEY_DOWN)
-			mouse_buttons[i] = KEY_REPEAT;
+		if(mouseButtons[i] == KEY_DOWN)
+			mouseButtons[i] = KEY_REPEAT;
 
-		if(mouse_buttons[i] == KEY_UP)
-			mouse_buttons[i] = KEY_IDLE;
+		if(mouseButtons[i] == KEY_UP)
+			mouseButtons[i] = KEY_IDLE;
 	}
 
 	while(SDL_PollEvent(&event) != 0)
@@ -108,22 +108,22 @@ bool Input::PreUpdate()
 			break;
 
 			case SDL_MOUSEBUTTONDOWN:
-				mouse_buttons[event.button.button - 1] = KEY_DOWN;
+				mouseButtons[event.button.button - 1] = KEY_DOWN;
 				//LOG("Mouse button %d down", event.button.button-1);
 			break;
 
 			case SDL_MOUSEBUTTONUP:
-				mouse_buttons[event.button.button - 1] = KEY_UP;
+				mouseButtons[event.button.button - 1] = KEY_UP;
 				//LOG("Mouse button %d up", event.button.button-1);
 			break;
 
 			case SDL_MOUSEMOTION:
 				int scale = App->win->GetScale();
-				mouse_motion_x = event.motion.xrel / scale;
-				mouse_motion_y = event.motion.yrel / scale;
-				mouse_x = event.motion.x / scale;
-				mouse_y = event.motion.y / scale;
-				//LOG("Mouse motion x %d y %d", mouse_motion_x, mouse_motion_y);
+				mouseMotionX = event.motion.xrel / scale;
+				mouseMotionY = event.motion.yrel / scale;
+				mouseX = event.motion.x / scale;
+				mouseY = event.motion.y / scale;
+				//LOG("Mouse motion x %d y %d", mouseMotionX, mouseMotionY);
 			break;
 		}
 	}
@@ -147,12 +147,12 @@ bool Input::GetWindowEvent(EventWindow ev)
 
 void Input::GetMousePosition(int& x, int& y)
 {
-	x = mouse_x;
-	y = mouse_y;
+	x = mouseX;
+	y = mouseY;
 }
 
 void Input::GetMouseMotion(int& x, int& y)
 {
-	x = mouse_motion_x;
-	y = mouse_motion_y;
+	x = mouseMotionX;
+	y = mouseMotionY;
 }
