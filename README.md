@@ -2,21 +2,26 @@
 
 ## Description
 
-Game about platforming very good.
-
-!!! DUE TO A MEMORY LEAK REGARDING ANIMATIONS, THE GAME DOES NOT WORK
+Game about platforming not very good.
 
 ## Key Features
 
  - Dash
  - Jump
  - Platforms
- - Enemies
  
 ## Controls
 
  - WASD to move
  - Left Shift to dash
+ - F1 to start from the first level
+ - F2 to start from the first level
+ - F3 to restart the current level
+ - F5 to save the game state
+ - F6 to load the game state
+ - F9 to View colliders
+ - F10 to enable God Mode (be careful because Gods are fast)
+ - F11 Toggle FPS cap to 30
 
 ## Developer
 
@@ -26,4 +31,4 @@ Game about platforming very good.
 
 This project is licensed under an unmodified MIT license, which is an OSI-certified license that allows static linking with closed source software. Check [LICENSE](LICENSE) for further details.
 
-{AdditionalLicenses}
+Additional Licenses at https://github.com/VictorNisa/PlatformerGame
