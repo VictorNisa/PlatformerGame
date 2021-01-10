@@ -73,10 +73,15 @@ bool Render::Update(float dt)
 {
 	uint winWidth, winHeight;
 	App->win->GetWindowSize(winWidth, winHeight);
+	if (App->entities->active)
+	{
+		if (App->entities->player != nullptr)
+		{
+			camera.x = -App->entities->player->position.x + winWidth / 2 - App->entities->player->player.boxW;
 
-	camera.x = -App->entities->player->position.x + winWidth/2 - App->entities->player->player.boxW;
-	camera.y = -App->entities->player->position.y + (winHeight/2) - App->entities->player->player.boxH / 2;
-
+			camera.y = -App->entities->player->position.y + (winHeight / 2) - App->entities->player->player.boxH / 2;
+		}
+	}
 	if (camera.x >= 0)
 	{
 		camera.x = 0;
@@ -109,7 +114,7 @@ bool Render::PostUpdate()
 bool Render::CleanUp()
 {
 	LOG("Destroying SDL render");
-	SDL_DestroyRenderer(renderer); 
+	//SDL_DestroyRenderer(renderer); 
 	return true;
 }
 
@@ -155,30 +160,13 @@ bool Render::Blit(SDL_Texture* texture, int x, int y, const SDL_Rect* section,  
 	uint scale = App->win->GetScale();
 
 	SDL_Rect rect;
-	if (flip) 
-	{
-		rect.x = ((int)(camera.x * speed) + x * scale) + App->map->data.tilesets[1]->tile_width; //Add player tile width when flipping it
-		rect.y = (int)(camera.y * speed) + y * scale;
-	}
-	else
-	{
-		rect.x = (int)(camera.x * speed) + x * scale;
-		rect.y = (int)(camera.y * speed) + y * scale;
-
-	}
+	rect.x = (int)(camera.x * speed) + x * scale;
+	rect.y = (int)(camera.y * speed) + y * scale;
 	
 	if(section != NULL)
 	{
-		if (flip)
-		{
-			rect.w = -section->w;
-			rect.h = section->h;
-		}
-		else 
-		{
-			rect.w = section->w;
-			rect.h = section->h;
-		}
+		rect.w = section->w;
+		rect.h = section->h;
 	}
 	else
 	{
@@ -198,7 +186,7 @@ bool Render::Blit(SDL_Texture* texture, int x, int y, const SDL_Rect* section,  
 		p = &pivot;
 	}
 
-	if(SDL_RenderCopyEx(renderer, texture, section, &rect, angle, p, SDL_FLIP_NONE) != 0)
+	if(SDL_RenderCopyEx(renderer, texture, section, &rect, angle, p, flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE) != 0)
 	{
 		LOG("Cannot blit to screen. SDL_RenderCopy error: %s", SDL_GetError());
 		ret = false;

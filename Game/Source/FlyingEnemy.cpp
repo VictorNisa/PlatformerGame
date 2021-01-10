@@ -8,7 +8,7 @@
 
 FlyingEnemy::FlyingEnemy(float x, float y, EntityType Type) : Entity(x, y, Type)
 {
-	colliderRect = { position.x, position.y, 50, 50 };
+	colliderRect = { (int)position.x, (int)position.y, 50, 50 };
 	collider = App->collisions->AddCollider(colliderRect, ObjectType::ENEMY, App->entities, (Entity*)this);
 	speed = { 100,100 };
 }
@@ -85,7 +85,7 @@ bool FlyingEnemy::Update(float dt)
 		collider->SetPos(position.x + 7, position.y + 7);
 	}
 
-	App->map->DrawAnimation("bat_idle", "Bat", position, aInfo, flip);
+	App->map->DrawAnimation("bat_idle", "Bat", position, &ainfo, flip);
 
 	return true;
 }

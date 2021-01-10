@@ -32,7 +32,15 @@ bool Map::Load(pugi::xml_node& node)
 {
 	LOG("Loading Map...");
 
-	App->fade->FadeToBlack(node.child("mapName").attribute("fileName").as_string(), false);
+	//App->fade->FadeToBlack(node.child("mapName").attribute("fileName").as_string(), false);
+
+	if (strcmp(node.child("mapName").attribute("fileName").as_string(), "Scene1.tmx") == 0) {
+		App->fade->FadeToBlack(1, true, 1.0f);
+	}
+	else if (strcmp(node.child("mapName").attribute("filenNme").as_string(), "Scene1.tmx") == 0) {
+		App->fade->FadeToBlack(2, true, 1.0f);
+	}
+	else LOG("Something's wrong!");
 
 	return true;
 }
@@ -64,8 +72,8 @@ void Map::Draw()
 	MapLayer* mapLayer = data.layers[0];
 	List_item<MapLayer*>* layerIter = data.layers.start;
 
-	int camera_h_tile = winHeight / 32 + 1;
-	int camera_w_tile = winWidth / 32 + 1;
+	camera_h_tile = winHeight / 32 + 1;
+	camera_w_tile = winWidth / 32 + 1;
 	
 	while(layerIter != nullptr) 
 	{ 
@@ -76,18 +84,18 @@ void Map::Draw()
 			break;
 		}
 
-		int camera_x_tile = (-App->render->camera.x * layerIter->data->speed) / 32;
-		int camera_y_tile = (-App->render->camera.y * layerIter->data->speed) / 32;
+		camera_x_tile = (-App->render->camera.x * layerIter->data->speed) / 32;
+		camera_y_tile = (-App->render->camera.y * layerIter->data->speed) / 32;
 
-		int i = 0;
-		int j = camera_y_tile;
+		i = 0;
+		j = camera_y_tile;
 
 		for (int y = camera_y_tile; y < (camera_y_tile + camera_h_tile); y++)
 		{
 			for (int x = camera_x_tile; x < (camera_x_tile + camera_w_tile); x++)
 			{
 				i = j * data.width + x;
-				App->render->Blit(data.tilesets[0]->texture, data.tilesets[0]->GetPos(x, y).x, data.tilesets[0]->GetPos(x, y).y, data.tilesets[0]->TileRect(gid_list[i]), false, layerIter->data->speed);
+				App->render->Blit(data.tilesets[0]->texture, data.tilesets[0]->GetPos(x, y).x, data.tilesets[0]->GetPos(x, y).y, &data.tilesets[0]->TileRect(gid_list[i]), false, layerIter->data->speed);
 			}
 			j++;
 		}
@@ -95,61 +103,70 @@ void Map::Draw()
 	}
 }
 
-void Map::DrawAnimation(SString name, const char* tileset, iPoint& position, AnimationInfo& aInfo, bool flip)
+void Map::DrawAnimation(SString name, char* tileset, fPoint& position, AnimationInfo* aInfo, bool flip)
 {
-	TileSet* animTileset = nullptr;
+	//TileSet* animTileset = nullptr;
 
-	List_item<TileSet*>* TilesetIter = data.tilesets.start;
+	List_item<TileSet*>* animTileset = data.tilesets.start;
 
-	while (TilesetIter != NULL)
+	while (animTileset != NULL)
 	{
-		if (TilesetIter->data->name, tileset)
+		//LOG("%d", strcmp(TilesetIter->data->name.GetString(), tileset));
+
+		cmp = strcmp(animTileset->data->name.GetString(), tileset);
+
+		if (cmp == 0)
 		{
-			animTileset = TilesetIter->data;
+			//animTileset_u = animTileset->data; //store found tileset into TileSet pointer
+			break;
 		}
-		TilesetIter = TilesetIter->next;
+
+		animTileset = animTileset->next;
 	}
 
-	if (animTileset == NULL)
-	{
+	if (animTileset == nullptr)
 		return;
-	}
 
-	Animations* currentAnim = nullptr;
+	//Animations* currentAnim = nullptr;
 
-	List_item<Animations*>* animIter = animTileset->animations.start;
+	List_item<Animations*>* currentAnim = animTileset->data->animations.start;
 
-	while (animIter)
+	while (currentAnim)
 	{
-		if (name == animIter->data->name)
+		cmp = strcmp(currentAnim->data->name.GetString(), name.GetString());
+
+		if (cmp == 0)
 		{
-			currentAnim = animIter->data; 
+			break;
 		}
-		animIter = animIter->next;
+
+		currentAnim = currentAnim->next;
 	}
+	if (currentAnim == nullptr) return;
 	
-	if (aInfo.prevAnimName != currentAnim->name.GetString())
+	if (aInfo->prevAnimName != currentAnim->data->name.GetString())
 	{
-		aInfo.iter = 0;
-		aInfo.frameCount = 0.0f;
+		aInfo->iter = 0;
+		aInfo->frameCount = 0.0f;
 	}
-	
-	aInfo.prevAnimName = currentAnim->name;
+	aInfo->prevAnimName = currentAnim->data->name;
 
-	App->render->Blit(animTileset->texture, position.x, position.y, animTileset->PlayerTileRect(currentAnim->frames[aInfo.iter]), flip);			
+	SDL_Rect tmpRec = animTileset->data->PlayerTileRect(currentAnim->data->frames[aInfo->iter]);
 
-	if (aInfo.frameCount > currentAnim->speed/1000)
+	App->render->Blit(animTileset->data->texture, position.x, position.y, &tmpRec, flip);			
+
+	if (aInfo->frameCount > currentAnim->data->speed/1000)
 	{
-		aInfo.iter++;
-		aInfo.frameCount = 0.0f;
+		aInfo->iter++;
+		aInfo->frameCount = 0.0f;
 	}
 
-	if (aInfo.iter >= currentAnim->nFrames) 
+	if (aInfo->iter >= currentAnim->data->nFrames) 
 	{				
-		aInfo.iter = 0;
+		aInfo->iter = 0;
 	}
 
-	aInfo.frameCount += App->dt;
+	aInfo->frameCount += App->dt;
 }
 
 bool Map::CreateWalkabilityMap(int& width, int& height, uchar** buffer) const
@@ -166,7 +183,7 @@ bool Map::CreateWalkabilityMap(int& width, int& height, uchar** buffer) const
 			continue;
 		}
 		uchar* map = new uchar[layer->width*layer->height];
-		memset(map, 1, layer->width*layer->height);
+		memset(map, 1, layer->width*layer->height*sizeof(uchar));
 
 		for (int y = 0; y < data.height; y++)
 		{
@@ -223,11 +240,9 @@ bool Map::CleanUp()
 	while (item != NULL)
 	{
 		item->data->animations.clear();
-		// delete item->data->Tilerect;
-		// delete item->data->PlayerTilerect;
 
-		SDL_DestroyTexture(item->data->texture);
-		RELEASE(item->data);
+		//SDL_DestroyTexture(item->data->texture);
+		//RELEASE(item->data);
 		item = item->next;
 	}
 	App->map->data.tilesets.clear();
@@ -237,6 +252,7 @@ bool Map::CleanUp()
 
 	while (item2 != NULL)
 	{
+		if (item2->data->objects != NULL)
 		delete[] item2->data->objects;
 
 		RELEASE(item2->data);
@@ -244,31 +260,47 @@ bool Map::CleanUp()
 	}
 	App->map->data.objectgroups.clear();
 	
+	List_item<MapLayer*>* item3;
+	item3 = App->map->data.layers.start;
+	while (item3 != NULL)
+	{
+		delete item3->data;
+		item3 = item3->next;
+	}
 	data.layers.clear();
 
 	return true;
 }
 
-bool Map::Load(const char* file_name)
+bool Map::Load(int level)
 {
 	bool ret = true;
-	SString tmp("%s%s", folder.GetString(), file_name);
 
-	SString* fileName = new SString(file_name);
+	const char* fileName;
+	if (level == 1) {
+		fileName = "Scene1.tmx";
+	}
+	else if (level == 2) {
+		fileName = "Scene1.tmx";
+	}
+	else {
+		LOG("ERROR Unrecognised level value");
+		fileName = "";
+	}
 
-
+	SString tmp("%s%s", folder.GetString(), fileName);
 	pugi::xml_parse_result result = map_file.load_file(tmp.GetString());
 
 	if(result == NULL)
 	{
-		LOG("Could not load map xml file %s. pugi error: %s", file_name, result.description());
+		LOG("Could not load map xml file %s. pugi error: %s", fileName, result.description());
 		ret = false;
 	}
 
 	// Load general info ----------------------------------------------
 	if(ret == true)
 	{
-		data.name = file_name;
+		data.name = fileName;
 		ret = LoadMap();
 	}
 
@@ -327,7 +359,7 @@ bool Map::Load(const char* file_name)
 
 	if(ret == true)
 	{
-		LOG("Successfully parsed map XML file: %s", fileName->GetString());
+		LOG("Successfully parsed map XML file: %s", fileName);
 		LOG("width: %d height: %d", data.width, data.height);
 		LOG("tile_width: %d tile_height: %d", data.tile_width, data.tile_height);
 
@@ -508,7 +540,7 @@ bool Map::LoadTilesetAnimation(pugi::xml_node& tileset_node, TileSet* set)
 		newAnimation->id = iterator_node.attribute("id").as_uint();
 		newAnimation->name = iterator_node.child("properties").child("property").attribute("name").as_string();
 		newAnimation->frames = new uint[12];
-		memset(newAnimation->frames, 0, 12);
+		memset(newAnimation->frames, 0, 12*sizeof(uint));
 
 		int j = 0;
 		for (pugi::xml_node iterator_node_anim = iterator_node.child("animation").child("frame"); iterator_node_anim; j++ )
@@ -612,6 +644,14 @@ bool Map::LoadObjectGroup(pugi::xml_node& node, MapObjectgroup* objectgroup)
 			temp->data.vString = iterator_node.child("properties").child("property").attribute("value").as_string();
 			objectgroup->objects[i].properties.list.add(temp);
 			objectgroup->objects[i].type = ObjectType::ENEMY;
+		}
+		else if (type == "coin")
+		{
+			Properties::Property* temp = new Properties::Property;
+			temp->name = iterator_node.child("properties").child("property").attribute("name").as_string();
+			temp->data.vString = iterator_node.child("properties").child("property").attribute("value").as_string();
+			objectgroup->objects[i].properties.list.add(temp);
+			objectgroup->objects[i].type = ObjectType::COIN;
 		}
 		else
 		{

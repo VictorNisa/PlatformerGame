@@ -10,7 +10,7 @@
 // Soldier a.k.a. walking enemy
 WalkingEnemy::WalkingEnemy(float x, float y, EntityType Type) : Entity(x, y, Type)
 {
-	colliderRect = { position.x, position.y, 50, 64 };
+	colliderRect = { (int)position.x, (int)position.y, 50, 64 };
 	collider = App->collisions->AddCollider(colliderRect, ObjectType::ENEMY, App->entities, (Entity*)this);
 
 	speed = { 150,150 };
@@ -38,10 +38,15 @@ bool WalkingEnemy::Start()
 	return true;
 }
 
+bool WalkingEnemy::CleanUp()
+{
+	return true;
+}
+
 bool WalkingEnemy::Update(float dt)
 {
 	prevPosition = position;
-	animation = "idle";
+	animation->create("idle");
 	pathfind();
 	if (!grounded)
 	{
@@ -52,7 +57,7 @@ bool WalkingEnemy::Update(float dt)
 		collider->SetPos(position.x, position.y);
 	}
 
-	App->map->DrawAnimation(animation, "Knight", position, aInfo, flip);
+	App->map->DrawAnimation(*animation, "Knight", position, &ainfo, flip);
 	grounded = false;
 
 	return true;
@@ -85,13 +90,13 @@ void WalkingEnemy::pathfind()
 			{
 				position.x += speed.x * App->dt;
 				flip = true;
-				animation = "walk";
+				animation->create("walk");
 			}
 			else if (closestCenter.x < position.x - collider->rect.w / 2)
 			{
 				position.x -= speed.x * App->dt;
 				flip = false;
-				animation = "walk";
+				animation->create("walk");
 			}
 		}
 	}

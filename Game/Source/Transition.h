@@ -13,11 +13,10 @@ public:
 	bool Start();
 	bool Awake(pugi::xml_node& conf);
 	bool Update(float dt);
-	bool FadeToBlack(const char* mapname,  bool reset_player = true, float time = 0.5f);
-	bool SwitchMap(const char* mapname);
+	bool FadeToBlack(int lvl,  bool isSaveLoad = false, float time = 0.5f);
 
 private:
-
+	bool SwitchMap(int level);
 	enum FadeStep
 	{
 		NONE,
@@ -36,6 +35,8 @@ private:
 	SDL_Rect screen;
 	
 	const char* mapName;
+	int level;
+	bool isLoad;
 };
 
 #endif //__TRANSITION_H__

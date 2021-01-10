@@ -12,7 +12,8 @@
 
 Players::Players(float x, float y, EntityType Type) : Entity(x, y, Type)
 {
-
+	player.playerBox = { (int)x, (int)y, player.boxW,player.boxH };
+	player.collider = App->collisions->AddCollider(player.playerBox, ObjectType::PLAYER, App->entities, (Entity*)this);
 };
 
 Players::~Players()
@@ -51,7 +52,7 @@ bool Players::Save(pugi::xml_node& node) const
 	flags.append_attribute("godMode") = player.godMode;
 
 	// SAVING PLAYER STATE
-	node.append_attribute("playerstate") = player.playerState;
+	node.append_attribute("playerState") = player.playerState;
 
 	return true;
 }
@@ -85,7 +86,7 @@ bool Players::Load(pugi::xml_node& node)
 	player.jumping			= flags.attribute("jumping").as_bool();
 	player.playerGrounded	= flags.attribute("playerGrounded").as_bool();
 
-	player.playerState = (PlayerState)node.attribute("playerstate").as_int();
+	player.playerState = (PlayerState)node.attribute("playerState").as_int();
 	
 	return true;
 }
@@ -115,10 +116,10 @@ bool Players::Awake()
 	player.boxH = tmp.child("player").child("box").attribute("h").as_int();
 	player.boxOffset_x = tmp.child("player").child("offset").attribute("x").as_int();
 
-	App->audio->LoadFx("Assets/audio/fx/jump1.wav");
-	App->audio->LoadFx("Assets/audio/fx/jump2.wav");
-	App->audio->LoadFx("Assets/audio/fx/jump3.wav");
-	App->audio->LoadFx("Assets/audio/fx/dash.wav");
+	App->audio->LoadFx("Assets/Audio/Fx/Jump1.wav");
+	App->audio->LoadFx("Assets/Audio/Fx/Jump2.wav");
+	App->audio->LoadFx("Assets/Audio/Fx/Jump3.wav");
+	App->audio->LoadFx("Assets/Audio/Fx/Dash.wav");
 	
 	return true;
 }; 
@@ -274,7 +275,7 @@ bool Players::Update(float dt)
 	player.playerBox.x = position.x;
 	player.playerBox.y = position.y;
 
-	App->map->DrawAnimation(player.animation,"Char",position, aInfo, player.flip);
+	App->map->DrawAnimation(player.animation,"Chara",position, &ainfo, player.flip);
 	
 	player.collider->SetPos(position.x + player.boxOffset_x, position.y);
 
@@ -309,10 +310,11 @@ bool Players::StartPlayer()
 {
 	if(App->fade->playerReset == true)
 
-	position = App->map->data.startPosition;
-	player.playerBox = { position.x,position.y,player.boxW,player.boxH };
+	//position = App->map->data.startPosition;
+	player.playerBox = { (int)position.x,  (int)position.y, player.boxW, player.boxH };
 	player.collider = App->collisions->AddCollider(player.playerBox, ObjectType::PLAYER, App->entities, (Entity*)this);
-	
+	player.playerBox = { (int)position.x,(int)position.y,player.boxW,player.boxH };
+
 	player.ableToJump = false;
 	player.ableToDash = false;
 	player.dashing = false;

@@ -20,6 +20,9 @@ class Players;
 class Collisions;
 class Transition;
 class EntityManager;
+class Fonts;
+class Gui;
+//class MenuScene;
 
 class Application
 {
@@ -97,11 +100,17 @@ public:
 	Collisions* collisions;
 	Transition* fade;
 	EntityManager* entities;
+	Gui* gui;
+	Fonts* font;
+	//MenuScene* menu;
 	
+
 	float dt;
+	int frameRate;
 	bool doLogic = false;
 	pugi::xml_node config;
-
+	uint32 lastSecFrameCount = 0;
+	uint32 framesOnLastUpdate;
 private:
 
 	List<Module*> modules;
@@ -126,9 +135,9 @@ private:
 	Timer startupTime;
 	Timer frameTime;
 	Timer lastSecFrameTime;
-	uint32 lastSecFrameCount = 0;
+
 	uint32 prevLastSecFrameCount = 0;
-	int frameRate;
+
 
 };
 

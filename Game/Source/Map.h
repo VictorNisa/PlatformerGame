@@ -53,10 +53,11 @@ enum class ObjectType
 	DAMAGE,
 	PLAYER,
 	ENEMY,
+	COIN,
 	TELEPORT,
 	ATTACK,
 
-	MAX_OBJECTS = 6
+	MAX_OBJECTS = 7
 };
 
 struct Animations
@@ -113,26 +114,26 @@ struct TileSet
 {
 	SDL_Rect Tilerect ;
 
-	SDL_Rect* TileRect(uint tile_id) 
+	SDL_Rect TileRect(uint tile_id) 
 	{
-		SDL_Rect* ret = &Tilerect; 
+		SDL_Rect ret = Tilerect; 
 
 		int x = ((tile_id - firstgid) % num_tiles_width);
 		int y = ((tile_id - firstgid) / num_tiles_width);
 
-		ret->x = x*tile_width  + margin + spacing*x;
-		ret->y = y*tile_height + margin + spacing*y;
-		ret->w = tile_width;
-		ret->h = tile_height;
+		ret.x = x*tile_width  + margin + spacing*x;
+		ret.y = y*tile_height + margin + spacing*y;
+		ret.w = tile_width;
+		ret.h = tile_height;
 
 		return ret;
 	}
 	
 	SDL_Rect PlayerTilerect;
 
-	SDL_Rect* PlayerTileRect(uint tile_id) 
+	SDL_Rect PlayerTileRect(uint tile_id) 
 	{
-		SDL_Rect* ret = &PlayerTilerect;
+		SDL_Rect ret = PlayerTilerect;
 
 		int num_t_width = tex_width / tile_width;
 		int num_t_height = tex_height / tile_height;
@@ -140,10 +141,10 @@ struct TileSet
 		int x = tile_id % num_t_width;
 		int y = tile_id / num_t_width;
 
-		ret->x = x * tile_width;
-		ret->y = y * tile_height;
-		ret->w = tile_width;
-		ret->h = tile_height;
+		ret.x = x * tile_width;
+		ret.y = y * tile_height;
+		ret.w = tile_width;
+		ret.h = tile_height;
 
 		return ret;
 	}
@@ -189,7 +190,7 @@ struct MapData
 	int tile_height;
 	
 	const char* name;
-	iPoint startPosition;
+	fPoint startPosition;
 	
 	SDL_Color background_color;
 	MapTypes type;
@@ -214,13 +215,14 @@ public:
 	// Called each loop iteration
 	void Draw();
 
-	void DrawAnimation(SString name,const char* tileset, iPoint& position, AnimationInfo& aInfo, bool flip=false);
+	void DrawAnimation(SString name,char* tileset, fPoint& position, AnimationInfo* aInfo, bool flip=false);
 
 	// Called before quitting
 	bool CleanUp();
 
 	// Load new map
-	bool Load(const char* path);
+
+	bool Load(int level);
 	
 	bool Load(pugi::xml_node&);
 	bool Save(pugi::xml_node&) const;
@@ -254,7 +256,13 @@ private:
 	// int i = 0;
 
 	// int frameCount = 1;
-
+	int cmp;
+	int i;
+	int j;
+	int camera_x_tile;
+	int camera_y_tile;
+	int camera_w_tile;
+	int camera_h_tile;
 	int msToFrame;
 
 	pugi::xml_document map_file;

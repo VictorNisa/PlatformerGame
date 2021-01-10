@@ -67,7 +67,7 @@ public:
 	bool CleanUp();
 
 	Collider* AddCollider(SDL_Rect rect, ObjectType type, Module* callback, Entity* entity = nullptr, Properties* userData = nullptr);
-	void LoadFromMap();
+	void LoadFromMap(bool loadEntities = true);
 
 private:
 	

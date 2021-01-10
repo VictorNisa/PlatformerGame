@@ -55,7 +55,7 @@ bool Transition::Update(float dt)
 		{
 			if(now >= totalTime)
 			{
-				SwitchMap(mapName);
+				SwitchMap(level);
 				totalTime += totalTime;
 				startTime = SDL_GetTicks();
 				CurrentStep = FadeStep::FADE_FROM_BLACK;
@@ -77,15 +77,14 @@ bool Transition::Update(float dt)
 	return true;
 }
 
-bool Transition::FadeToBlack(const char* mapname, bool resetPlayer, float time)
+bool Transition::FadeToBlack(int lvl, bool isSaveLoad, float time)
 {
 	bool ret = false;
-	
-	playerReset = resetPlayer;
-	mapName = mapname;
 
 	if(CurrentStep == FadeStep::NONE)
 	{
+		isLoad = isSaveLoad;
+		level = lvl;
 		CurrentStep = FadeStep::FADE_TO_BLACK;
 		startTime = SDL_GetTicks();
 		totalTime = (Uint32)(time * 0.5f * 1000.0f);
@@ -97,17 +96,41 @@ bool Transition::FadeToBlack(const char* mapname, bool resetPlayer, float time)
 	return ret;
 }
 
-bool Transition::SwitchMap(const char* mapname) 
+bool Transition::SwitchMap(int level) 
 {
 	bool ret = true;
 	LOG("Switching Maps...");
 
-	App->collisions->colliders.clear();
 	App->map->CleanUp();
+	App->entities->CleanUp();
+	App->collisions->CleanUp();
 
-	ret = App->map->Load(mapname);
-	App->collisions->LoadFromMap();
-	// ret = App->player->StartPlayer();
+	App->map->Load(level);
+	if (!isLoad)
+	{
+		App->collisions->LoadFromMap();
+	}
+	else if (isLoad) {
+		App->collisions->LoadFromMap(false);
+
+		//Delete all entities.
+		List_item<Collider*>* Coll_iterator = App->collisions->colliders.start;
+		while (Coll_iterator != nullptr) {
+
+			if (Coll_iterator->data->type == ObjectType::ENEMY || Coll_iterator->data->type == ObjectType::PLAYER || Coll_iterator->data->type == ObjectType::COIN)
+			{
+				int tmp = App->entities->entity_list.find(Coll_iterator->data->entity);
+				if (tmp != -1) {
+
+					Entity* to_delete = App->entities->entity_list.At(tmp)->data;
+					App->entities->DeleteEntity(to_delete);
+				}
+
+			}
+			Coll_iterator = Coll_iterator->next;
+		}
+		App->entities->Load_Now();
+	}
 	
 	return ret;
 }

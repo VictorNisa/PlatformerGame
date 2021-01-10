@@ -170,3 +170,13 @@ bool Audio::PlayFx(unsigned int id, int repeat)
 
 	return ret;
 }
+
+int Audio::SetMusicVol(float vol) {
+	if (vol >= 0.0f) return Mix_VolumeMusic(MIX_MAX_VOLUME * vol);
+	else return Mix_VolumeMusic(-1);
+}
+
+int Audio::SetFxVol(float vol) {
+	if (vol >= 0.0f) return Mix_Volume(-1, MIX_MAX_VOLUME * vol);
+	else return Mix_Volume(-1, -1);
+}

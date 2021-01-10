@@ -6,11 +6,13 @@
 #include "List.h"
 #include "Point.h"
 #include "SDL/include/SDL.h"
+#include "Timer.h"
 
 #include "Entity.h"
 #include "FlyingEnemy.h"
 #include "Players.h"
 #include "WalkingEnemy.h"
+#include "Coin.h"
 
 // Manager class
 class EntityManager : public Module
@@ -21,7 +23,7 @@ public:
 	EntityManager();
 
 	// Destructor
-	// virtual ~j1EntityMachine();
+	// virtual ~EntityMachine();
 
 	bool Init();
 
@@ -47,6 +49,8 @@ public:
 	bool Save(pugi::xml_node& node) const;
 	bool Load(pugi::xml_node& node);
 
+	bool Load_Now();
+
 	//Extra Functions
 	void PlayerCollisions(Collider* A, Collider* B);
 
@@ -65,13 +69,18 @@ public:
 
 	Players* player = nullptr;
 
-	FlyingEnemy* bat = nullptr;
+	Timer* damageTimer;
 
-	WalkingEnemy* knight = nullptr;
+	//FlyingEnemy* bat = nullptr;
 
-	WalkingEnemy* knight2 = nullptr;
+	//WalkingEnemy* knight = nullptr;
+
+	//WalkingEnemy* knight2 = nullptr;
 
 private:
+	pugi::xml_node loadNode;
+	int coin;
+	int hurt;
 };
 
 

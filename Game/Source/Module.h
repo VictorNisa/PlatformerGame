@@ -73,6 +73,18 @@ public:
 
 	// Callbacks ---
 	virtual void OnCollision(Collider* A, Collider* B) {	}
+
+	void activate()
+	{
+		active = true;
+		Start();
+	}
+
+	void deactivate()
+	{
+		active = false;
+		CleanUp();
+	}
 public:
 
 	SString name;

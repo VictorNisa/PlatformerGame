@@ -154,7 +154,7 @@ Collider* Collisions::AddCollider(SDL_Rect rect, ObjectType type, Module* callba
 }
 
 //Add Colliders to the list from the map
-void Collisions::LoadFromMap() 
+void Collisions::LoadFromMap(bool loadEntities) 
 {
 	List_item<MapObjectgroup*>* list_i = App->map->data.objectgroups.start;
 	while (list_i != nullptr) 
@@ -163,19 +163,24 @@ void Collisions::LoadFromMap()
 		{
 			if (list_i->data->objects[i].type == ObjectType::ENEMY)
 			{
-				if (strcmp(list_i->data->objects[i].properties.list.start->data->data.vString, "FLYING_ENEMY") == 0)
-				{
-					App->entities->CreateEntity(list_i->data->objects[i].box->x, list_i->data->objects[i].box->y, FLYING_ENEMY);
+				if (loadEntities) {
+					if (strcmp(list_i->data->objects[i].properties.list.start->data->data.vString, "FLYING_ENEMY") == 0)
+					{
+						App->entities->CreateEntity(list_i->data->objects[i].box->x, list_i->data->objects[i].box->y, FLYING_ENEMY);
+					}
+					else if (strcmp(list_i->data->objects[i].properties.list.start->data->data.vString, "WALKING_ENEMY") == 0)
+					{
+						App->entities->CreateEntity(list_i->data->objects[i].box->x, list_i->data->objects[i].box->y, WALKING_ENEMY);
+					}
+					else if (strcmp(list_i->data->objects[i].properties.list.start->data->data.vString, "PLAYER") == 0)
+					{
+						App->entities->CreateEntity(list_i->data->objects[i].box->x, list_i->data->objects[i].box->y, PLAYER);
+					}
 				}
-				else if (strcmp(list_i->data->objects[i].properties.list.start->data->data.vString, "WALKING_ENEMY") == 0)
-				{
-					App->entities->CreateEntity(list_i->data->objects[i].box->x, list_i->data->objects[i].box->y, WALKING_ENEMY);
-				}
-				else if (strcmp(list_i->data->objects[i].properties.list.start->data->data.vString, "PLAYER") == 0)
-				{
-					App->entities->CreateEntity(list_i->data->objects[i].box->x, list_i->data->objects[i].box->y, PLAYER);
-				}
-
+			}
+			else if (list_i->data->objects[i].type == ObjectType::COIN)
+			{
+				if (loadEntities) App->entities->CreateEntity(list_i->data->objects[i].box->x, list_i->data->objects[i].box->y, COIN);
 			}
 			else 
 			{

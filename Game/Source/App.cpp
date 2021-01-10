@@ -18,6 +18,9 @@
 #include "App.h"
 #include "Timer.h"
 #include "PerfTimer.h"
+#include "Gui.h"
+#include "Fonts.h"
+//#include "MenuScene.h"
 
 // Constructor
 Application::Application(int argc, char* args[]) : argc(argc), args(args)
@@ -35,8 +38,11 @@ Application::Application(int argc, char* args[]) : argc(argc), args(args)
 	pathfinding = new Pathfinding();
 	entities = new EntityManager();
 	// player = new Players();
+	gui = new Gui();
 	collisions = new Collisions();
 	fade = new Transition();
+	font = new Fonts();
+	//menu = new MenuScene();
 
 	// Ordered for awake / Start / Update
 	// Reverse order of CleanUp
@@ -47,13 +53,20 @@ Application::Application(int argc, char* args[]) : argc(argc), args(args)
 	AddModule(map);
 	AddModule(pathfinding);
 	AddModule(scene);
+	//AddModule(menu);
 	AddModule(entities);
 	// AddModule(player);
+	AddModule(gui);
 	AddModule(collisions);
 	AddModule(fade);
+	AddModule(font);
 
 	// Render last to swap buffer
 	AddModule(render);
+
+	//scene->deactivate();
+	//collisions->deactivate();
+	//entities->deactivate();
 }
 
 // Destructor
@@ -132,7 +145,10 @@ bool Application::Start()
 
 	while(item != NULL && ret == true)
 	{
-		ret = item->data->Start();
+		if (item->data->active)
+		{
+			ret = item->data->Start();
+		}
 		item = item->next;
 	}
 
@@ -206,11 +222,12 @@ void Application::FinishUpdate()
 	float avgFps = float(frameCount) / startupTime.ReadSec();
 	float secondsSinceStartup = startupTime.ReadSec();
 	uint32 lastFrameMs = frameTime.Read();
-	uint32 framesOnLastUpdate = prevLastSecFrameCount;
+	framesOnLastUpdate = prevLastSecFrameCount;
 
 	static char title[256];
-	sprintf_s(title, 256, "Av.FPS: %.2f Last Frame Ms: %02u Last sec frames: %i  Time since startup: %.3f Frame Count: %lu ",
-		avgFps, lastFrameMs, framesOnLastUpdate, secondsSinceStartup, frameCount);
+	//sprintf_s(title, 256, "Av.FPS: %.2f Last Frame Ms: %02u Last sec frames: %i  Time since startup: %.3f Frame Count: %lu ",
+	//	avgFps, lastFrameMs, framesOnLastUpdate, secondsSinceStartup, frameCount);
+	sprintf_s(title, 256, "Hellbound, by Victor Nisa");
 	App->win->SetTitle(title);
 
 	uint32 frametimeTmp = frameTime.Read();

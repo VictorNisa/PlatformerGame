@@ -14,13 +14,13 @@ enum EntityType
 	PLAYER = 0,
 	FLYING_ENEMY,
 	WALKING_ENEMY,
-	PARTICLE,
+	COIN,
 	UNKNOWN
 };
 
 struct AnimationInfo
 {
-	int iter;
+	int iter = 0;
 	SString prevAnimName = "idle";
 	float frameCount = 0.0f;
 };
@@ -31,14 +31,14 @@ class Entity
 	//VARS
 public:
 	//Constructor
-	iPoint position;
+	fPoint position;
 	EntityType type;
 
 	//Vars
-	SString animation;
-	iPoint speed;
-	iPoint prevPosition;
-	AnimationInfo aInfo;
+	SString* animation;
+	fPoint speed;
+	fPoint prevPosition;
+	AnimationInfo ainfo;
 	Collider* collider;
 	SDL_Rect colliderRect;
 	bool flip;

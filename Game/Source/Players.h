@@ -28,7 +28,7 @@ struct Player
 	Point<float> speed;
 	Point<float> maxSpeed;
 	// Point<float> position;
-	iPoint prevPosition;
+	fPoint prevPosition;
 	Point<float> lastGroundedPos;
 
 	SString animation;

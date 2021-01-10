@@ -3,6 +3,8 @@
 #include "Textures.h"
 #include "Map.h"
 #include "Transition.h"
+#include "Scene.h"
+#include "Audio.h"
 
 #include "EntityManager.h"
 
@@ -14,6 +16,7 @@ EntityManager::EntityManager()
 
 bool EntityManager::Start()
 {
+	damageTimer = new Timer();
 	List_item<Entity*>* entityIter = entity_list.start;
 
 	while (entityIter != NULL)
@@ -40,7 +43,8 @@ bool  EntityManager::Awake(pugi::xml_node& config)
 
 	//	entityIter = entityIter->next;
 	//}
-
+	coin = App->audio->LoadFx("Assets/Audio/Fx/Coin.wav");
+	hurt = App->audio->LoadFx("Assets/Audio/Fx/Hurt.wav");
 	return true;
 };
 
@@ -98,7 +102,7 @@ bool EntityManager::CleanUp()
 
 		entityIter = entityIter->next;
 	}
-
+	entity_list.clear();
 	return true;
 };
 
@@ -114,9 +118,12 @@ Entity* EntityManager::CreateEntity(float x, float y, EntityType Type)
 	{
 	case PLAYER:
 
-		ret = new Players(x, y, Type);
+		//ret = new Players(x, y, Type);
 
-		player = (Players*)ret;
+		//player = (Players*)ret;
+
+		player = new Players(x, y, Type);
+		ret = player;
 
 		if (ret != nullptr)
 		{
@@ -128,10 +135,14 @@ Entity* EntityManager::CreateEntity(float x, float y, EntityType Type)
 
 		break;
 
-	case PARTICLE:
+	case COIN:
 
-		// Maybe add a simple particle system
+		ret = new Coin(x, y, Type);
 
+		if (ret != nullptr)
+		{
+			entity_list.add(ret);
+		}
 		break;
 
 	case FLYING_ENEMY:
@@ -164,7 +175,11 @@ Entity* EntityManager::CreateEntity(float x, float y, EntityType Type)
 // Destroy an Entity and remove it from the list -----------------------------------------------------
 void EntityManager::DeleteEntity(Entity* entity)
 {
-	entity->collider->toDelete = true;
+	// IF BUGS, CHECK THIS LINE OF CODE
+	if (entity->collider != nullptr)
+	{
+		entity->collider->toDelete = true;
+	}
 	entity_list.del(entity_list.At(entity_list.find(entity)));
 }
 
@@ -196,36 +211,80 @@ bool EntityManager::Save(pugi::xml_node& node) const
 
 bool EntityManager::Load(pugi::xml_node& node)
 {
+	//entity_list.clear();
+
+	//pugi::xml_node nodeI = node;
+	//Entity* loadedEntity;
+
+	//for (; nodeI; nodeI = nodeI.next_sibling("entity"))
+	//{
+	//	iPoint pos;
+	//	pos.x = node.child("position").attribute("x").as_int();
+	//	pos.y = node.child("position").attribute("y").as_int();
+
+	//	if (strcmp(node.attribute("EntityType").as_string(), "FLYING_ENEMY"))
+	//	{
+	//		loadedEntity = (Entity*)new FlyingEnemy(pos.x, pos.y, FLYING_ENEMY);
+	//	}
+	//	else if (strcmp(node.attribute("EntityType").as_string(), "WALKING_ENEMY"))
+	//	{
+	//		loadedEntity = (Entity*)new WalkingEnemy(pos.x, pos.y, WALKING_ENEMY);
+	//	}
+	//	else if (strcmp(node.attribute("EntityType").as_string(), "PLAYER"))
+	//	{
+	//		loadedEntity = (Entity*)new Players((float)pos.x, (float)pos.y, PLAYER);
+
+	//		// If code breaks, check this line of code
+	//	}
+	//	else break;
+	//	loadedEntity->prevPosition.x = node.child("position").attribute("x").as_int();
+	//	loadedEntity->prevPosition.x = node.child("position").attribute("y").as_int();
+
+	//	entity_list.add(loadedEntity);
+	//}
+
+	return true;
+};
+
+bool EntityManager::Load_Now()
+{
 	entity_list.clear();
 
-	pugi::xml_node nodeI = node;
-	Entity* loadedEntity;
+	pugi::xml_document data;
+	pugi::xml_node root;
 
-	for (; nodeI; nodeI = nodeI.next_sibling("entity"))
-	{
+	pugi::xml_parse_result result = data.load_file("save_game.xml");
+
+	root = data.child("gameState");
+
+	pugi::xml_node node_i = root.child("entities").child("entity");
+	Entity* loaded_entity;
+
+	for (; node_i; node_i = node_i.next_sibling("entity")) {
+
 		iPoint pos;
-		pos.x = node.child("position").attribute("x").as_int();
-		pos.y = node.child("position").attribute("y").as_int();
+		pos.x = node_i.child("position").attribute("x").as_float();
+		pos.y = node_i.child("position").attribute("y").as_float();
 
-		if (strcmp(node.attribute("EntityType").as_string(), "FLYING_ENEMY"))
-		{
-			loadedEntity = (Entity*)new FlyingEnemy(pos.x, pos.y, FLYING_ENEMY);
+		if (strcmp(node_i.attribute("EntityType").as_string(), "FLYING_ENEMY") == 0) {
+			loaded_entity = CreateEntity(pos.x, pos.y, FLYING_ENEMY);
 		}
-		else if (strcmp(node.attribute("EntityType").as_string(), "WALKING_ENEMY"))
-		{
-			loadedEntity = (Entity*)new WalkingEnemy(pos.x, pos.y, WALKING_ENEMY);
+		else if (strcmp(node_i.attribute("EntityType").as_string(), "WALKING_ENEMY") == 0) {
+			loaded_entity = CreateEntity(pos.x, pos.y, WALKING_ENEMY);
 		}
-		else if (strcmp(node.attribute("EntityType").as_string(), "PLAYER"))
-		{
-			loadedEntity = (Entity*)new Players((float)pos.x, (float)pos.y, PLAYER);
+		else if (strcmp(node_i.attribute("EntityType").as_string(), "PLAYER") == 0) {
+			loaded_entity = CreateEntity((float)pos.x, (float)pos.y, PLAYER);
+		}
+		else if (strcmp(node_i.attribute("EntityType").as_string(), "COIN") == 0) {
+			loaded_entity = CreateEntity((float)pos.x, (float)pos.y, COIN);
+		}
+		else continue;
+		if (loaded_entity != nullptr) {
+			loaded_entity->prevPosition.x = node_i.child("position").attribute("x").as_float();
+			loaded_entity->prevPosition.y = node_i.child("position").attribute("y").as_float();
 
-			// If code breaks, check this line of code
+			//entity_list.add(loaded_entity);
 		}
-		else break;
-		loadedEntity->prevPosition.x = node.child("position").attribute("x").as_int();
-		loadedEntity->prevPosition.x = node.child("position").attribute("y").as_int();
-
-		entity_list.add(loadedEntity);
 	}
 
 	return true;
@@ -237,7 +296,6 @@ void EntityManager::OnCollision(Collider* A, Collider* B)
 
 	AttackCollisions(A, B);
 
-
 	WalkingEnemyCollisions(A, B);
 }
 
@@ -245,6 +303,7 @@ void EntityManager::AttackCollisions(Collider* A, Collider* B)
 {
 	if (A->type == ObjectType::ATTACK && B->type == ObjectType::ENEMY) 
 	{
+		App->scene->score += 100;
 		DeleteEntity(B->entity);
 	}
 }
@@ -253,6 +312,10 @@ void EntityManager::AttackCollisions(Collider* A, Collider* B)
 void EntityManager::WalkingEnemyCollisions(Collider* A, Collider* B)
 {
 	if (A->type != ObjectType::ENEMY && B->type != ObjectType::ENEMY)
+	{
+		return;
+	}
+	if (A->type == ObjectType::PLAYER && B->type == ObjectType::PLAYER)
 	{
 		return;
 	}
@@ -330,13 +393,39 @@ void EntityManager::PlayerCollisions(Collider* A, Collider* B)
 		B = &temp;
 	}
 
-	if (A->type != ObjectType::PLAYER) {
-		return;
-	}
+	//if (A->type != ObjectType::PLAYER) {
+	//	return;
+	//}
 
 	if (A->type == ObjectType::PLAYER && B->type == ObjectType::ENEMY)
 	{
-		App->fade->FadeToBlack("Scene1.tmx");
+		if (damageTimer->Read() >= 1000.f)
+		{
+			App->scene->hp--;
+			damageTimer->Start();
+			App->audio->PlayFx(hurt);
+		}
+		if (App->scene->hp <= 0)
+		{
+			App->audio->PlayFx(hurt);
+			App->fade->FadeToBlack(1);
+			App->scene->hp = 10;
+		}
+		return;
+	}
+
+	if (A->type == ObjectType::PLAYER && B->type == ObjectType::COIN)
+	{
+		Coin* tmp = (Coin*)B->entity;
+		if (tmp->pickedUp == false) {
+			//App->scene->score += 100;
+			tmp->pickedUp = true;
+			App->audio->PlayFx(coin);
+		}
+		App->scene->score += 100;
+
+		DeleteEntity(B->entity);
+		return;
 	}
 
 	if (A->type == ObjectType::PLAYER && B->type == ObjectType::SOLID)
@@ -403,6 +492,6 @@ void EntityManager::PlayerCollisions(Collider* A, Collider* B)
 	}
 
 	if (A->type == ObjectType::PLAYER && B->type == ObjectType::TELEPORT) {
-		App->fade->FadeToBlack(B->userData->Get("MapToLoad").vString);
+		//App->fade->FadeToBlack(1);
 	}
 }

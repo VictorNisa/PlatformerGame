@@ -3,7 +3,7 @@
 class FlyingEnemy : public Entity
 {
 public:
-	iPoint goal;
+	fPoint goal;
 
 	FlyingEnemy(float x, float y, EntityType Type);
 	bool Awake(pugi::xml_node &);

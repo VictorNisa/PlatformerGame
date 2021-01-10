@@ -1,24 +1,30 @@
 <?xml version="1.0"?>
-<game_state>
+<gameState>
 	<input />
 	<window />
 	<textures />
 	<audio />
 	<map>
-		<map_name filename="Scene1.tmx" />
+		<mapName fileName="Scene1.tmx" />
 	</map>
+	<pathfinding />
 	<scene />
-	<player playerstate="3">
-		<points>
-			<position x="988" y="1047.25" />
-			<prevposition x="982" y="1046.5" />
-			<lastGroundedPos x="856" y="1204" />
-		</points>
-		<flags able_to_jump="false" able_to_dash="true" dashing="false" jumping="true" drop_plat="false" playerGrounded="false" flip="false" godMode="false" />
-	</player>
+	<entities>
+		<entity EntityType="PLAYER" playerState="3">
+			<position x="176.624969" y="17.8999996" />
+			<prevPosition x="1.05612236e-38" y="8.90820428e-39" />
+			<speed x="9.64289385e-39" y="7.07147333e-39" />
+			<points>
+				<position x="176.624969" y="17.8999996" />
+				<prevPosition x="176.624969" y="13.9399996" />
+				<lastGroundedPos x="9.09185005e-39" y="4.68376305e-39" />
+			</points>
+			<flags ableToJjump="false" ableToDash="true" dashing="false" jumping="true" dropPlat="false" playerGrounded="false" flip="false" godMode="false" />
+		</entity>
+	</entities>
 	<collisions />
 	<fade />
 	<renderer>
-		<camera x="-522" y="-693" />
+		<camera x="0" y="0" />
 	</renderer>
-</game_state>
+</gameState>
